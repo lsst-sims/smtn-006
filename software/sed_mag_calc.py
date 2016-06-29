@@ -111,7 +111,7 @@ def get_physical_characteristics(sed_name, sub_dir):
 if __name__ == "__main__":
 
     ebv_list = np.arange(0.001, 0.01, 0.001)
-    ebv_list = np.append(ebv_list, np.arange(0.01, 7.0, 0.01))
+    ebv_list = np.append(ebv_list, np.arange(0.01, 7.0, 0.1))
 
     root_sed_dir = getPackageDir('sims_sed_library')
     sub_dir_list = ('kurucz', 'mlt', 'wDs')
