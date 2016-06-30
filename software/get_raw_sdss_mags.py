@@ -1,3 +1,12 @@
+"""
+This script crawls through sims_sed_library and computes the unnormalized,
+un-extincted SDSS magnitudes and magNorms (magnitudes in the Imsim Bandpass)
+of every stellar spectrum (main sequence, white dwarf, and M/L/T dwarf).
+
+The results are output to the text file raw_sdss_mags.txt, which is meant
+to be used by fit_bright_stars.cpp
+"""
+
 from __future__ import with_statement
 import os
 from lsst.utils import getPackageDir
@@ -7,6 +16,7 @@ import time
 
 if __name__ == "__main__":
 
+    # Load the SDSS bandpasses
     bp_dir = os.path.join(getPackageDir('throughputs'), 'sdss')
     bp_name_list = ['doi_u.dat', 'doi_g.dat', 'doi_r.dat', 'doi_i.dat',
                     'doi_z.dat']
@@ -17,6 +27,7 @@ if __name__ == "__main__":
         bp.readThroughput(os.path.join(bp_dir, name))
         bp_list.append(bp)
 
+    # load the imsim bandpass
     imsimBand = Bandpass()
     imsimBand.imsimBandpass()
 
@@ -24,6 +35,10 @@ if __name__ == "__main__":
     sub_dir_list = ['kurucz', 'mlt', 'wDs']
     
     t_start = time.time()
+
+    # loop through the kurucz, mlt, and wDs sub-directories of
+    # sims_sed_library/starSED, calculating the required magnitudes
+    # for each of the SED files found.
     with open('raw_sdss_mags.txt','w') as output_file:
         for sub_dir in sub_dir_list:
             sed_dir = os.path.join(star_dir, sub_dir)
