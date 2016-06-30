@@ -69,7 +69,7 @@ combination to be the true SED and E(B-V) value for the star.  Because the
 names of the SED files in ``sims_sed_library`` include the effective
 temperatures, metallicities, and surface gravities of the simulate spectra, we
 were able to add this data to the table.  Thus, the final schema for the
-``bright_stars`` table on the LSSTCATSIM database is as follows:
+``bright_stars`` table on the LSSTCATSIM database is as follows.
 
 ``bright_stars`` schema
 -----------------------
@@ -118,3 +118,6 @@ were able to add this data to the table.  Thus, the final schema for the
 
 * residual is the least square error residual between the input stellar colors
   and the colors of the best-fit SED and E(B-V) pair
+
+* cx, cy, cz are the Cartesian coordinates of the star on a hypothetical unit
+  sphere (like htmid, these exist to facilitate spatial searching of the table).
