@@ -165,7 +165,7 @@ if __name__ == "__main__":
 
     t_start = time.time()
 
-    with open('test_output.txt', 'w') as output_file:
+    with open('magnitude_grid.txt', 'w') as output_file:
 
         output_file.write('#sed_name E(B-V) teff [Fe/H] log(g) ')
         for bp_tag in bp_tag_list:
@@ -177,7 +177,9 @@ if __name__ == "__main__":
             sed_dir = os.path.join(root_sed_dir, 'starSED', sub_dir)
             list_of_files = os.listdir(sed_dir)
 
-            for file_name in list_of_files[:3]:
+            for file_name in list_of_files:
+
+                # get the T_eff,metallicity, and log_g of each file
                 phys = get_physical_characteristics(file_name, sub_dir)
                 full_name = os.path.join(sed_dir, file_name)
                 ss = Sed()
