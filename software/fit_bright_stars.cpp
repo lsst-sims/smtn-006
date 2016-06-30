@@ -1,3 +1,17 @@
+/*
+This code reads in the outputs from get_raw_sdss_mags.py
+and sed_mag_calc.py as well as a list of gzipped csv
+files (the raw inputs provided by Dave Monet) and finds
+the best fit SED, E(B-V) pair for each star in the
+input csv file.  The best-fit data is written
+to a file
+
+csvName_ebv_grid_fit.txt
+
+where csvName is the name of the csv file being fit
+at any given time.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -5,6 +19,10 @@
 #define letters 500
 #define pi 3.141592654
 
+/*
+These are indices of all of the magnitudes computed
+by sed_mag_calc.py
+*/
 #define _2mass_j_dex 0
 #define _2mass_h_dex 1
 #define _2mass_ks_dex 2
@@ -35,6 +53,20 @@
 #define _lsst_z_dex 27
 #define _lsst_y_dex 28
 
+/*
+Each star in the input catalog only has, at most, 16 magnitudes.
+They come from some cobination of the 22 bandpasses specified above
+(obviously, the catalog does not contain LSST magnitudes for the stars).
+In order to perform the star-to-SED fit, we read in the catalog magnitudes
+of the star (indices 0 through 15), and then map those onto
+a 22-element array corresponding to the 22 possible magnitudes
+which have been calculated for each SED (see above; magnitudes
+that do not exist for a given star are given a nonsense value).
+The fit will then be calculated by comparing the color of the star
+in all of the existing magnitudes to the color of each SED in those
+same existing magnitudes.  The indices defined above and below
+exist to standardize that process.
+*/
 #define _star_B_dex 0
 #define _star_V_dex 1
 #define _star_u_dex 2
@@ -82,7 +114,11 @@ int char_same(char *w1, char *w2){
 
 
 long long int twos_complement(long long int ii){
-
+    /*
+    Compute the two's complement of a long long integer.
+    This is necessary for parsing the number used to encode
+    provenance information in the original catalog.
+    */
 
     int *binary;
     binary=new int[4*hexadec_places];
@@ -151,6 +187,10 @@ long long int twos_complement(long long int ii){
 
 
 void convert_to_hexadecimal(long long int ii, int *output){
+    /*
+    Convert a long long int into an array of hexadecimal bits
+    (where 10=a, 11=b, etc.)
+    */
 
     if(ii<0){
         ii=twos_complement(ii);
@@ -188,10 +228,10 @@ void get_mag_array(long long int flag, double *mag_in, double *mag_out){
     /*
     flag is the integer flag from the catalog
 
-    mag_in is the magnitude read in for the star
+    mag_in is the magnitude read in for the star (indices _star_B_dex through _star_sst_dex)
 
-    mag_out is mag_in re-mapped to the full set of magnitudes
-    that exist for each sed
+    mag_out is mag_in re-mapped to the full set of magnitudes (indices _2mass_j_dex through _sdss_z_dex)
+    that exist for each SED
     */
 
     int i;
@@ -252,7 +292,7 @@ void get_mag_array(long long int flag, double *mag_in, double *mag_out){
 int fit_star_mags(double *star_mags, double *best_offset, double *err_out){
     /*
     Read in a an array of mapped star mags.
-    Return the row index of the best-fitting sed, e(b-v) combination
+    Return the row index of the best-fitting SED, e(b-v) combination
     */
 
 
@@ -385,7 +425,10 @@ void lonLatFromRaDec(double ra, double dec, double *lon, double *lat){
 int main(int iargc, char *argv[]){
 
     if(iargc==1){
-        printf("args: ebv_mag_grid raw_sdss_mag list_of_inputs\n");
+        printf("args: ebv_mag_grid raw_sdss_mag list_of_inputs\n\n");
+        printf("ebv_mag_grid is the output of sed_mag_calc.py\n");
+        printf("raw_sdss_mag is the output of get_raw_sdss_mags.py\n");
+        printf("list_of_inputs is a text file listing the gzipped csv files to process\n");
         exit(1);
     }
 
@@ -428,6 +471,7 @@ int main(int iargc, char *argv[]){
         input_files[i]=new char[letters];
     }
 
+    // read in the names of the csv files to be processed
     input=fopen(list_of_inputs, "r");
     for(i=0;i<n_input_files;i++){
         fscanf(input,"%s",input_files[i]);
@@ -435,6 +479,8 @@ int main(int iargc, char *argv[]){
     fclose(input);
 
 
+    // do some testing to make sure I converted
+    // base 10 to base 16 properly
     printf("testing hexadec\n");
 
     int hexadec_bits[hexadec_places];
@@ -556,6 +602,7 @@ int main(int iargc, char *argv[]){
 
     double xx;
 
+    // determine how many SEDs and E(B-V)s are in our grid of possible fits
     input=fopen(grid_name,"r");
     for(i=0;i<n_mags+5;i++){
         fscanf(input,"%s",word);
@@ -580,6 +627,7 @@ int main(int iargc, char *argv[]){
         sed_names[i]=new char[letters];
     }
 
+    // read in SEDs and E(B-V)s
     input=fopen(grid_name, "r");
     for(i=0;i<n_mags+5;i++){
         fscanf(input,"%s",word);
@@ -601,6 +649,7 @@ int main(int iargc, char *argv[]){
     double *raw_magnorm;
     double **raw_sdss_mags;
 
+    // read in the raw SDSS magnitudes and magNorms of our SEDs
     input=fopen(raw_grid_name, "r");
     for(n_raw_sed=0;fscanf(input,"%s",word)>0;n_raw_sed++){
         for(i=0;i<6;i++){
@@ -661,6 +710,8 @@ int main(int iargc, char *argv[]){
 
     char buffer_name[2*letters];
 
+    // construct a mapping so we can associate our SED, E(B-V) grid to
+    // the raw SDSS magnitudes and magNorms
     int *sed_to_raw_map;
     sed_to_raw_map = new int[n_sed];
     for(i=0;i<n_sed;i++){
@@ -672,8 +723,11 @@ int main(int iargc, char *argv[]){
         }
     }
 
+    // Loop over the csv files, performing the fits of all stars in those files
     for(i_file=0;i_file<n_input_files;i_file++){
         sprintf(buffer_name,"%s_buffer.txt",input_files[i_file]);
+
+        // unzip the csv file and use sed to make it ' ' delimited, rather than ',' delimited
         printf("should be unzipping %s to %s\n",input_files[i_file],buffer_name);
         sprintf(cmd,"gunzip -c %s | sed 's/,/ /g' | sed 's/  / /g' > %s",
         input_files[i_file],buffer_name);
@@ -692,9 +746,13 @@ int main(int iargc, char *argv[]){
         fprintf(output,"sdss_u(ext) sdss_g(ext) sdss_r(ext) sdss_i(ext) sdss_z(ext) ");
         fprintf(output,"sdss_u(raw) sdss_g(raw) sdss_r(raw) sdss_i(raw) sdss_z(raw) ");
         fprintf(output,"magnitude_residual\n");
+
+        // read in the ' ' delimited file created with sed
         input=fopen(buffer_name,"r");
         ct=-1;
         printf("looping at %e\n",double(time(NULL))-t_start);
+
+        // loop over all of the stars in the ' ' delimited file
         while(fscanf(input,"%lld",&star_id)>0){
             ct++;
             fscanf(input,"%le %le %le %le\n",
@@ -705,7 +763,10 @@ int main(int iargc, char *argv[]){
             }
             fscanf(input,"%lld",&flag);
 
+            // map the star's magnitudes onto the SED magnitudes
             get_mag_array(flag, star_mags, mapped_star_mags);
+
+            // choose the SED, E(B-V) pair that best matches the star's colors
             i_chosen=fit_star_mags(mapped_star_mags, &offset, &err);
 
             raw_dex=sed_to_raw_map[i_chosen];
