@@ -814,7 +814,7 @@ int main(int iargc, char *argv[]){
         printf("looping at %e\n",double(time(NULL))-t_start);
 
         // loop over all of the stars in the ' ' delimited file
-        while(fscanf(input,"%lld",&star_id)>0 && ct<10){
+        while(fscanf(input,"%lld",&star_id)>0){
             ct++;
             fscanf(input,"%le %le %le %le\n",
             &ra, &dec, &mura, &mudec);
