@@ -805,7 +805,7 @@ int main(int iargc, char *argv[]){
         fprintf(output,"lsst_u_atm lsst_g_atm lsst_r_atm lsst_i_atm lsst_z_atm lsst_y_atm ");
         fprintf(output,"sdss_u(ext) sdss_g(ext) sdss_r(ext) sdss_i(ext) sdss_z(ext) ");
         fprintf(output,"sdss_u(raw) sdss_g(raw) sdss_r(raw) sdss_i(raw) sdss_z(raw) ");
-        fprintf(output,"color_residual\n");
+        fprintf(output,"color_residual file_name\n");
 
         // read in the ' ' delimited file created with sed
         input=fopen(buffer_name,"r");
@@ -871,7 +871,7 @@ int main(int iargc, char *argv[]){
             raw_sdss_mags[raw_dex][2]+offset, raw_sdss_mags[raw_dex][3]+offset,
             raw_sdss_mags[raw_dex][4]+offset);
 
-            fprintf(output,"%le ",err);
+            fprintf(output,"%le %s",err,input_files[i_file]);
             fprintf(output,"\n");
 
             // sfd control
