@@ -92,7 +92,7 @@ exist to standardize that process.
 
 int n_sed;
 char **sed_names;
-double *sed_data,*teff,*metallicity,*ebv,*logg;
+double *sed_data,*teff,*metallicity,*ebv_data,*logg;
 
 int valid_dex[n_mags];
 double star_color[n_mags];
@@ -645,7 +645,7 @@ int main(int iargc, char *argv[]){
     sed_names=new char*[n_sed];
     sed_data=new double[n_sed*n_mags];
     teff=new double[n_sed];
-    ebv=new double[n_sed];
+    ebv_data=new double[n_sed];
     metallicity=new double[n_sed];
     logg=new double[n_sed];
 
@@ -661,7 +661,7 @@ int main(int iargc, char *argv[]){
     for(i=0;i<n_sed;i++){
         fscanf(input,"%s",sed_names[i]);
         fscanf(input,"%le %le %le %le",
-        &ebv[i],&teff[i],&metallicity[i],&logg[i]);
+        &ebv_data[i],&teff[i],&metallicity[i],&logg[i]);
 
         for(j=0;j<n_mags;j++){
             fscanf(input,"%le",&sed_data[i*n_mags+j]);
@@ -829,7 +829,7 @@ int main(int iargc, char *argv[]){
             ebv_max = get_ebv_max(ra, dec, ebv_ra, ebv_dec, ebv_ebv, n_ebv_spatial);
 
             // choose the SED, E(B-V) pair that best matches the star's colors
-            i_chosen=fit_star_mags(star_mags, mag_map, ebv, ebv_max, &offset, &err);
+            i_chosen=fit_star_mags(star_mags, mag_map, ebv_data, ebv_max, &offset, &err);
 
             raw_dex=sed_to_raw_map[i_chosen];
 
@@ -847,7 +847,7 @@ int main(int iargc, char *argv[]){
             star_id, ra, dec, mura*1000.0, mudec*1000.0, lon, lat);
 
             fprintf(output,"%s %le %le %le ",
-            sed_names[i_chosen],raw_magnorm[raw_dex]+offset,flux_factor,ebv[i_chosen]);
+            sed_names[i_chosen],raw_magnorm[raw_dex]+offset,flux_factor,ebv_data[i_chosen]);
 
             fprintf(output,"%le %le %le ",teff[i_chosen], metallicity[i_chosen], logg[i_chosen]);
 
