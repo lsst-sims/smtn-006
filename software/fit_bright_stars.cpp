@@ -629,11 +629,11 @@ int main(int iargc, char *argv[]){
 
     // determine how many SEDs and E(B-V)s are in our grid of possible fits
     input=fopen(sed_grid_name,"r");
-    for(i=0;i<n_mags+5;i++){
+    for(i=0;i<n_mags+2;i++){
         fscanf(input,"%s",word);
     }
     for(i=0;fscanf(input,"%s",word)>0;i++){
-        for(j=0;j<n_mags+4;j++){
+        for(j=0;j<n_mags+1;j++){
             fscanf(input,"%le",&xx);
         }
     }
@@ -643,10 +643,8 @@ int main(int iargc, char *argv[]){
 
     sed_names=new char*[n_sed];
     sed_data=new double[n_sed*n_mags];
-    teff=new double[n_sed];
     ebv_data=new double[n_sed];
-    metallicity=new double[n_sed];
-    logg=new double[n_sed];
+
 
     for(i=0;i<n_sed;i++){
         sed_names[i]=new char[letters];
@@ -654,13 +652,12 @@ int main(int iargc, char *argv[]){
 
     // read in SEDs and E(B-V)s
     input=fopen(sed_grid_name, "r");
-    for(i=0;i<n_mags+5;i++){
+    for(i=0;i<n_mags+2;i++){
         fscanf(input,"%s",word);
     }
     for(i=0;i<n_sed;i++){
         fscanf(input,"%s",sed_names[i]);
-        fscanf(input,"%le %le %le %le",
-        &ebv_data[i],&teff[i],&metallicity[i],&logg[i]);
+        fscanf(input,"%le",&ebv_data[i]);
 
         for(j=0;j<n_mags;j++){
             fscanf(input,"%le",&sed_data[i*n_mags+j]);
@@ -677,7 +674,7 @@ int main(int iargc, char *argv[]){
     // read in the raw SDSS magnitudes and magNorms of our SEDs
     input=fopen(raw_grid_name, "r");
     for(n_raw_sed=0;fscanf(input,"%s",word)>0;n_raw_sed++){
-        for(i=0;i<6;i++){
+        for(i=0;i<9;i++){
             fscanf(input,"%le",&xx);
         }
     }
@@ -687,6 +684,9 @@ int main(int iargc, char *argv[]){
     raw_sed_names=new char*[n_raw_sed];
     raw_magnorm=new double[n_raw_sed];
     raw_sdss_mags=new double*[n_raw_sed];
+    teff=new double[n_raw_sed];
+    metallicity=new double[n_raw_sed];
+    logg=new double[n_raw_sed];
     for(i=0;i<n_raw_sed;i++){
         raw_sed_names[i]=new char[letters];
         raw_sdss_mags[i]=new double[5];
@@ -695,6 +695,7 @@ int main(int iargc, char *argv[]){
     input=fopen(raw_grid_name,"r");
     for(i=0;i<n_raw_sed;i++){
         fscanf(input,"%s",raw_sed_names[i]);
+        fscanf(input,"%le %le %le",&teff[i],&metallicity[i],&logg[i]);
         fscanf(input,"%le",&raw_magnorm[i]);
         for(j=0;j<5;j++){
             fscanf(input,"%le",&raw_sdss_mags[i][j]);
@@ -708,7 +709,7 @@ int main(int iargc, char *argv[]){
     for(i=0;i<3;i++){
         fscanf(input,"%s", word);
     }
-    for(n_ebv_spatial=0;fscanf(input,"%le",&xx)!=0;n_ebv_spatial++){
+    for(n_ebv_spatial=0;fscanf(input,"%le",&xx)>0;n_ebv_spatial++){
         for(i=0;i<2;i++){
             fscanf(input,"%le",&xx);
         }
@@ -813,7 +814,7 @@ int main(int iargc, char *argv[]){
         printf("looping at %e\n",double(time(NULL))-t_start);
 
         // loop over all of the stars in the ' ' delimited file
-        while(fscanf(input,"%lld",&star_id)>0){
+        while(fscanf(input,"%lld",&star_id)>0 && ct<10){
             ct++;
             fscanf(input,"%le %le %le %le\n",
             &ra, &dec, &mura, &mudec);
@@ -849,7 +850,7 @@ int main(int iargc, char *argv[]){
             fprintf(output,"%s %le %le %le ",
             sed_names[i_chosen],raw_magnorm[raw_dex]+offset,flux_factor,ebv_data[i_chosen]);
 
-            fprintf(output,"%le %le %le ",teff[i_chosen], metallicity[i_chosen], logg[i_chosen]);
+            fprintf(output,"%le %le %le ",teff[raw_dex], metallicity[raw_dex], logg[raw_dex]);
 
             fprintf(output,"%le %le %le %le %le %le ",
             sed_data[i_chosen*n_mags+_lsst_u_dex]+offset,sed_data[i_chosen*n_mags+_lsst_g_dex]+offset,
