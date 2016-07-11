@@ -52,6 +52,12 @@ by sed_mag_calc.py
 #define _lsst_i_dex 26
 #define _lsst_z_dex 27
 #define _lsst_y_dex 28
+#define _lsst_u_atm_dex 29
+#define _lsst_g_atm_dex 30
+#define _lsst_r_atm_dex 31
+#define _lsst_i_atm_dex 32
+#define _lsst_z_atm_dex 33
+#define _lsst_y_atm_dex 34
 
 /*
 Each star in the input catalog only has, at most, 16 magnitudes.
@@ -84,7 +90,7 @@ exist to standardize that process.
 #define _star_w4_dex 14
 #define _star_sst_dex 15
 
-#define n_mags 29
+#define n_mags 35
 #define n_star_mags 16
 #define hexadec_places 8
 
@@ -92,10 +98,19 @@ exist to standardize that process.
 
 int n_sed;
 char **sed_names;
-double *sed_data,*teff,*metallicity,*ebv,*logg;
+double *sed_data,*teff,*metallicity,*ebv_data,*logg;
 
 int valid_dex[n_mags];
 double star_color[n_mags];
+
+double power(double aa, int ee){
+     double out=1.0;
+     int i;
+     for(i=0;i<ee;i++){
+         out*=aa;
+     }
+     return out;
+}
 
 int char_same(char *w1, char *w2){
     int i;
@@ -224,60 +239,41 @@ void convert_to_hexadecimal(long long int ii, int *output){
 }
 
 
-void get_mag_array(long long int flag, double *mag_in, double *mag_out){
-    /*
-    flag is the integer flag from the catalog
-
-    mag_in is the magnitude read in for the star (indices _star_B_dex through _star_sst_dex)
-
-    mag_out is mag_in re-mapped to the full set of magnitudes (indices _2mass_j_dex through _sdss_z_dex)
-    that exist for each SED
-    */
-
-    int i;
-    for(i=0;i<n_mags;i++){
-        mag_out[i]=bad_val-10.0;
-    }
-
-    //default (sdss)
-    mag_out[_2mass_j_dex]=mag_in[_star_J_dex];
-    mag_out[_2mass_ks_dex]=mag_in[_star_K_dex];
-    mag_out[_2mass_h_dex] = mag_in[_star_H_dex];
-    mag_out[_johnson_B_dex] = mag_in[_star_B_dex];
-    mag_out[_johnson_V_dex] = mag_in[_star_V_dex];
-    mag_out[_sdss_u_dex] = mag_in[_star_u_dex];
-    mag_out[_sdss_g_dex] = mag_in[_star_g_dex];
-    mag_out[_sdss_r_dex] = mag_in[_star_r_dex];
-    mag_out[_sdss_i_dex] = mag_in[_star_i_dex];
-    mag_out[_sdss_z_dex] = mag_in[_star_z_dex];
-    mag_out[_wise_1_dex] = mag_in[_star_w1_dex];
-    mag_out[_wise_2_dex] = mag_in[_star_w2_dex];
-    mag_out[_wise_3_dex] = mag_in[_star_w3_dex];
-    mag_out[_wise_4_dex] = mag_in[_star_w4_dex];
-
+void get_mag_map(long long int flag, int *map_out){
     int hexadec_bits[hexadec_places];
 
     convert_to_hexadecimal(flag, hexadec_bits);
     int psrc=hexadec_bits[4];
 
+    //default (sdss)
+    map_out[_star_J_dex] = _2mass_j_dex;
+    map_out[_star_K_dex] = _2mass_ks_dex;
+    map_out[_star_H_dex] = _2mass_h_dex;
+    map_out[_star_B_dex] = _johnson_B_dex;
+    map_out[_star_V_dex] = _johnson_V_dex;
+    map_out[_star_u_dex] = _sdss_u_dex;
+    map_out[_star_g_dex] = _sdss_g_dex;
+    map_out[_star_r_dex] = _sdss_r_dex;
+    map_out[_star_i_dex] = _sdss_i_dex;
+    map_out[_star_z_dex] = _sdss_z_dex;
+    map_out[_star_y_dex] = _ps_y_dex;
+    map_out[_star_w1_dex] = _wise_1_dex;
+    map_out[_star_w2_dex] = _wise_2_dex;
+    map_out[_star_w3_dex] = _wise_3_dex;
+    map_out[_star_w4_dex] = _wise_4_dex;
+
     if(psrc==0 || psrc==1 || psrc==11){
         //B4 or ps1
-        mag_out[_sdss_g_dex] = bad_val-10.0;
-        mag_out[_sdss_r_dex] = bad_val-10.0;
-        mag_out[_sdss_i_dex] = bad_val-10.0;
-        mag_out[_sdss_z_dex] = bad_val-10.0;
-        mag_out[_ps_g_dex] = mag_in[_star_g_dex];
-        mag_out[_ps_r_dex] = mag_in[_star_r_dex];
-        mag_out[_ps_i_dex] = mag_in[_star_i_dex];
-        mag_out[_ps_z_dex] = mag_in[_star_z_dex];
-        mag_out[_ps_y_dex] = mag_in[_star_y_dex];
+        map_out[_star_g_dex] = _ps_g_dex;
+        map_out[_star_r_dex] = _ps_r_dex;
+        map_out[_star_i_dex] = _ps_i_dex;
+        map_out[_star_z_dex] = _ps_z_dex;
+        map_out[_star_y_dex] = _ps_y_dex;
     }
     else if(psrc==6 || psrc==7){
         //tycho or hipparcos
-        mag_out[_johnson_B_dex] = bad_val-10.0;
-        mag_out[_johnson_V_dex] = bad_val-10.0;
-        mag_out[_tycho_B_dex] = mag_in[_star_B_dex];
-        mag_out[_tycho_V_dex] = mag_in[_star_V_dex];
+        map_out[_star_B_dex] = _tycho_B_dex;
+        map_out[_star_V_dex] = _tycho_V_dex;
     }
     else if(psrc>12 || psrc<0){
         printf("psrc %d\n",psrc);
@@ -285,11 +281,10 @@ void get_mag_array(long long int flag, double *mag_in, double *mag_out){
         exit(1);
     }
 
-
 }
 
 
-int fit_star_mags(double *star_mags, double *best_offset, double *err_out){
+int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_max, double *best_offset, double *err_out){
     /*
     Read in a an array of mapped star mags.
     Return the row index of the best-fitting SED, e(b-v) combination
@@ -301,7 +296,7 @@ int fit_star_mags(double *star_mags, double *best_offset, double *err_out){
     double err,err_best;
 
     int n_valid=0;
-    for(ii=0;ii<n_mags;ii++){
+    for(ii=0;ii<n_star_mags-1;ii++){
         if(star_mags[ii]>bad_val){
             n_valid++;
         }
@@ -309,7 +304,7 @@ int fit_star_mags(double *star_mags, double *best_offset, double *err_out){
 
 
     j=0;
-    for(ii=0;ii<n_mags;ii++){
+    for(ii=0;ii<n_star_mags-1;ii++){
         if(star_mags[ii]>bad_val){
             valid_dex[j]=ii;
             j++;
@@ -324,9 +319,13 @@ int fit_star_mags(double *star_mags, double *best_offset, double *err_out){
     }
 
     for(ii=0;ii<n_sed;ii++){
+        if(ebv_grid[ii]>ebv_max && ii>0){
+            break;
+        }
         err=0.0;
+
         for(j=0;j<n_valid-1;j++){
-            sed_color=sed_data[ii*n_mags+valid_dex[j]]-sed_data[ii*n_mags+valid_dex[j+1]];
+            sed_color=sed_data[ii*n_mags+mag_map[valid_dex[j]]]-sed_data[ii*n_mags+mag_map[valid_dex[j+1]]];
             err+=(sed_color-star_color[j])*(sed_color-star_color[j]);
             if(ii>0 && err>err_best){
                 break;
@@ -345,12 +344,7 @@ int fit_star_mags(double *star_mags, double *best_offset, double *err_out){
     }
     best_offset[0]=best_offset[0]/n_good;
 
-    double xx;
-    err_out[0]=0.0;
-    for(j=0;j<n_valid;j++){
-        xx=star_mags[valid_dex[j]]-sed_data[dex_best*n_mags+valid_dex[j]]-best_offset[0];
-        err_out[0]+=xx*xx;
-    }
+    err_out[0]=sqrt(err_best)/(n_valid-1);
 
     return dex_best;
 
@@ -422,27 +416,53 @@ void lonLatFromRaDec(double ra, double dec, double *lon, double *lat){
 }
 
 
+double get_ebv_max(double ra_in, double dec_in, double *ra_grid, double *dec_grid, double *ebv_grid, int n_ebv_grid){
+
+    double ra_rad=ra_in*pi/180.0;
+    double dec_rad=dec_in*pi/180.0;
+
+    int i,min_dex;
+    double dd,dd_min;
+    double t1,t2;
+    dd_min=1000000.0;
+    min_dex=-1;
+    for(i=0;i<n_ebv_grid;i++){
+        t1=power(sin(dec_rad*0.5-dec_grid[i]*0.5),2);
+        t2 = cos(dec_rad)*cos(dec_grid[i])*power(sin(0.5*ra_rad-0.5*ra_grid[i]),2);
+        dd=2.0*asin(sqrt(t1+t2));
+        if(min_dex<0 || dd<dd_min){
+            min_dex=i;
+            dd_min=dd;
+        }
+    }
+
+    return ebv_grid[min_dex];
+}
+
 int main(int iargc, char *argv[]){
 
-    if(iargc==1){
-        printf("args: ebv_mag_grid raw_sdss_mag list_of_inputs\n\n");
-        printf("ebv_mag_grid is the output of sed_mag_calc.py\n");
+    if(iargc<5){
+        printf("args: sed_mag_grid raw_sdss_mag ebv_spatial_grid list_of_inputs\n\n");
+        printf("sed_mag_grid is the output of sed_mag_calc.py\n");
         printf("raw_sdss_mag is the output of get_raw_sdss_mags.py\n");
+        printf("ebv_spatial_grid is a text file that gives the integrated SFD extinction for RA, Dec pairs\n");
         printf("list_of_inputs is a text file listing the gzipped csv files to process\n");
         exit(1);
     }
 
-    char grid_name[letters];
+    char sed_grid_name[letters];
 
     char raw_grid_name[letters];
+
+    char ebv_spatial_grid_name[letters];
 
     char list_of_inputs[letters];
     int i,j;
 
     for(i=0;i<letters-1 && argv[1][i]!=0;i++){
-        grid_name[i]=argv[1][i];
+        sed_grid_name[i]=argv[1][i];
     }
-    grid_name[i]=0;
+    sed_grid_name[i]=0;
 
     for(i=0;i<letters-1 && argv[2][i]!=0;i++){
         raw_grid_name[i]=argv[2][i];
@@ -450,11 +470,16 @@ int main(int iargc, char *argv[]){
     raw_grid_name[i]=0;
 
     for(i=0;i<letters-1 && argv[3][i]!=0;i++){
-        list_of_inputs[i]=argv[3][i];
+        ebv_spatial_grid_name[i]=argv[3][i];
+    }
+    ebv_spatial_grid_name[i]=0;
+
+    for(i=0;i<letters-1 && argv[4][i]!=0;i++){
+        list_of_inputs[i]=argv[4][i];
     }
     list_of_inputs[i]=0;
 
-    printf("%s\n%s\n%s\n",grid_name,raw_grid_name,list_of_inputs);
+    printf("%s\n%s\n%s\n",sed_grid_name,raw_grid_name,list_of_inputs);
 
     FILE *input;
     char word[500];
@@ -603,12 +628,12 @@ int main(int iargc, char *argv[]){
     double xx;
 
     // determine how many SEDs and E(B-V)s are in our grid of possible fits
-    input=fopen(grid_name,"r");
-    for(i=0;i<n_mags+5;i++){
+    input=fopen(sed_grid_name,"r");
+    for(i=0;i<n_mags+2;i++){
         fscanf(input,"%s",word);
     }
     for(i=0;fscanf(input,"%s",word)>0;i++){
-        for(j=0;j<n_mags+4;j++){
+        for(j=0;j<n_mags+1;j++){
             fscanf(input,"%le",&xx);
         }
     }
@@ -618,24 +643,21 @@ int main(int iargc, char *argv[]){
 
     sed_names=new char*[n_sed];
     sed_data=new double[n_sed*n_mags];
-    teff=new double[n_sed];
-    ebv=new double[n_sed];
-    metallicity=new double[n_sed];
-    logg=new double[n_sed];
+    ebv_data=new double[n_sed];
+
 
     for(i=0;i<n_sed;i++){
         sed_names[i]=new char[letters];
     }
 
     // read in SEDs and E(B-V)s
-    input=fopen(grid_name, "r");
-    for(i=0;i<n_mags+5;i++){
+    input=fopen(sed_grid_name, "r");
+    for(i=0;i<n_mags+2;i++){
         fscanf(input,"%s",word);
     }
     for(i=0;i<n_sed;i++){
         fscanf(input,"%s",sed_names[i]);
-        fscanf(input,"%le %le %le %le",
-        &ebv[i],&teff[i],&metallicity[i],&logg[i]);
+        fscanf(input,"%le",&ebv_data[i]);
 
         for(j=0;j<n_mags;j++){
             fscanf(input,"%le",&sed_data[i*n_mags+j]);
@@ -652,7 +674,7 @@ int main(int iargc, char *argv[]){
     // read in the raw SDSS magnitudes and magNorms of our SEDs
     input=fopen(raw_grid_name, "r");
     for(n_raw_sed=0;fscanf(input,"%s",word)>0;n_raw_sed++){
-        for(i=0;i<6;i++){
+        for(i=0;i<9;i++){
             fscanf(input,"%le",&xx);
         }
     }
@@ -662,6 +684,9 @@ int main(int iargc, char *argv[]){
     raw_sed_names=new char*[n_raw_sed];
     raw_magnorm=new double[n_raw_sed];
     raw_sdss_mags=new double*[n_raw_sed];
+    teff=new double[n_raw_sed];
+    metallicity=new double[n_raw_sed];
+    logg=new double[n_raw_sed];
     for(i=0;i<n_raw_sed;i++){
         raw_sed_names[i]=new char[letters];
         raw_sdss_mags[i]=new double[5];
@@ -670,12 +695,45 @@ int main(int iargc, char *argv[]){
     input=fopen(raw_grid_name,"r");
     for(i=0;i<n_raw_sed;i++){
         fscanf(input,"%s",raw_sed_names[i]);
+        fscanf(input,"%le %le %le",&teff[i],&metallicity[i],&logg[i]);
         fscanf(input,"%le",&raw_magnorm[i]);
         for(j=0;j<5;j++){
             fscanf(input,"%le",&raw_sdss_mags[i][j]);
         }
     }
     fclose(input);
+
+    int n_ebv_spatial;
+    double *ebv_ra, *ebv_dec, *ebv_ebv;
+    input=fopen(ebv_spatial_grid_name, "r");
+    for(i=0;i<3;i++){
+        fscanf(input,"%s", word);
+    }
+    for(n_ebv_spatial=0;fscanf(input,"%le",&xx)>0;n_ebv_spatial++){
+        for(i=0;i<2;i++){
+            fscanf(input,"%le",&xx);
+        }
+    }
+    fclose(input);
+
+    printf("n_ebv_spatial %d\n",n_ebv_spatial);
+    ebv_ra = new double[n_ebv_spatial];
+    ebv_dec = new double[n_ebv_spatial];
+    ebv_ebv = new double[n_ebv_spatial];
+
+    input=fopen(ebv_spatial_grid_name,"r");
+    for(i=0;i<3;i++){
+        fscanf(input,"%s", word);
+    }
+    for(i=0;i<n_ebv_spatial;i++){
+        fscanf(input,"%le",&ebv_ra[i]);
+        fscanf(input,"%le",&ebv_dec[i]);
+        fscanf(input,"%le",&ebv_ebv[i]);
+
+        //convert to radians
+        ebv_ra[i]*=pi/180.0;
+        ebv_dec[i]*=pi/180.0;
+    }
 
     int i_file;
     char cmd[2*letters];
@@ -690,8 +748,8 @@ int main(int iargc, char *argv[]){
 
     FILE *output;
 
-    double *mapped_star_mags;
-    mapped_star_mags=new double[n_mags];
+    int *mag_map;
+    mag_map = new int[n_star_mags-1];
 
     int i_chosen;
     double offset;
@@ -723,6 +781,8 @@ int main(int iargc, char *argv[]){
         }
     }
 
+    double ebv_max;
+
     // Loop over the csv files, performing the fits of all stars in those files
     for(i_file=0;i_file<n_input_files;i_file++){
         sprintf(buffer_name,"%s_buffer.txt",input_files[i_file]);
@@ -740,12 +800,13 @@ int main(int iargc, char *argv[]){
         //control=fopen(control_name,"w");
 
         output=fopen(output_name, "w");
-        fprintf(output,"#star_id ra dec mura mudec lon lat ");
+        fprintf(output,"#dummy_htmid star_id ra dec mura mudec lon lat ");
         fprintf(output,"sed magnorm flux_factor E(B-V) Teff [Fe/H] log(g) ");
-        fprintf(output,"lsst_u lsst_g lsst_r lsst_i lsst_z lsst_y ");
+        fprintf(output,"lsst_u_noatm lsst_g_noatm lsst_r_noatm lsst_i_noatm lsst_z_noatm lsst_y_noatm ");
+        fprintf(output,"lsst_u_atm lsst_g_atm lsst_r_atm lsst_i_atm lsst_z_atm lsst_y_atm ");
         fprintf(output,"sdss_u(ext) sdss_g(ext) sdss_r(ext) sdss_i(ext) sdss_z(ext) ");
         fprintf(output,"sdss_u(raw) sdss_g(raw) sdss_r(raw) sdss_i(raw) sdss_z(raw) ");
-        fprintf(output,"magnitude_residual\n");
+        fprintf(output,"color_residual file_name\n");
 
         // read in the ' ' delimited file created with sed
         input=fopen(buffer_name,"r");
@@ -753,7 +814,7 @@ int main(int iargc, char *argv[]){
         printf("looping at %e\n",double(time(NULL))-t_start);
 
         // loop over all of the stars in the ' ' delimited file
-        while(fscanf(input,"%lld",&star_id)>0){
+        while(fscanf(input,"%lld",&star_id)>0 && ct<10){
             ct++;
             fscanf(input,"%le %le %le %le\n",
             &ra, &dec, &mura, &mudec);
@@ -764,10 +825,12 @@ int main(int iargc, char *argv[]){
             fscanf(input,"%lld",&flag);
 
             // map the star's magnitudes onto the SED magnitudes
-            get_mag_array(flag, star_mags, mapped_star_mags);
+            get_mag_map(flag, mag_map);
+
+            ebv_max = get_ebv_max(ra, dec, ebv_ra, ebv_dec, ebv_ebv, n_ebv_spatial);
 
             // choose the SED, E(B-V) pair that best matches the star's colors
-            i_chosen=fit_star_mags(mapped_star_mags, &offset, &err);
+            i_chosen=fit_star_mags(star_mags, mag_map, ebv_data, ebv_max, &offset, &err);
 
             raw_dex=sed_to_raw_map[i_chosen];
 
@@ -781,18 +844,23 @@ int main(int iargc, char *argv[]){
 
             lonLatFromRaDec(ra, dec, &lon, &lat);
 
-            fprintf(output,"%lld %.12le %.12le %.12le %.12le %.12le %.12le ",
+            fprintf(output,"0 %lld %.12le %.12le %.12le %.12le %.12le %.12le ",
             star_id, ra, dec, mura*1000.0, mudec*1000.0, lon, lat);
 
             fprintf(output,"%s %le %le %le ",
-            sed_names[i_chosen],raw_magnorm[raw_dex]+offset,flux_factor,ebv[i_chosen]);
+            sed_names[i_chosen],raw_magnorm[raw_dex]+offset,flux_factor,ebv_data[i_chosen]);
 
-            fprintf(output,"%le %le %le ",teff[i_chosen], metallicity[i_chosen], logg[i_chosen]);
+            fprintf(output,"%le %le %le ",teff[raw_dex], metallicity[raw_dex], logg[raw_dex]);
 
             fprintf(output,"%le %le %le %le %le %le ",
             sed_data[i_chosen*n_mags+_lsst_u_dex]+offset,sed_data[i_chosen*n_mags+_lsst_g_dex]+offset,
             sed_data[i_chosen*n_mags+_lsst_r_dex]+offset,sed_data[i_chosen*n_mags+_lsst_i_dex]+offset,
             sed_data[i_chosen*n_mags+_lsst_z_dex]+offset,sed_data[i_chosen*n_mags+_lsst_y_dex]+offset);
+
+            fprintf(output,"%le %le %le %le %le %le ",
+            sed_data[i_chosen*n_mags+_lsst_u_atm_dex]+offset,sed_data[i_chosen*n_mags+_lsst_g_atm_dex]+offset,
+            sed_data[i_chosen*n_mags+_lsst_r_atm_dex]+offset,sed_data[i_chosen*n_mags+_lsst_i_atm_dex]+offset,
+            sed_data[i_chosen*n_mags+_lsst_z_atm_dex]+offset,sed_data[i_chosen*n_mags+_lsst_y_atm_dex]+offset);
 
             fprintf(output,"%le %le %le %le %le ",
             sed_data[i_chosen*n_mags+_sdss_u_dex]+offset,sed_data[i_chosen*n_mags+_sdss_g_dex]+offset,
@@ -804,7 +872,7 @@ int main(int iargc, char *argv[]){
             raw_sdss_mags[raw_dex][2]+offset, raw_sdss_mags[raw_dex][3]+offset,
             raw_sdss_mags[raw_dex][4]+offset);
 
-            fprintf(output,"%le ",err);
+            fprintf(output,"%le %s",err,input_files[i_file]);
             fprintf(output,"\n");
 
             // sfd control
