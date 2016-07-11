@@ -224,60 +224,41 @@ void convert_to_hexadecimal(long long int ii, int *output){
 }
 
 
-void get_mag_array(long long int flag, double *mag_in, double *mag_out){
-    /*
-    flag is the integer flag from the catalog
-
-    mag_in is the magnitude read in for the star (indices _star_B_dex through _star_sst_dex)
-
-    mag_out is mag_in re-mapped to the full set of magnitudes (indices _2mass_j_dex through _sdss_z_dex)
-    that exist for each SED
-    */
-
-    int i;
-    for(i=0;i<n_mags;i++){
-        mag_out[i]=bad_val-10.0;
-    }
-
-    //default (sdss)
-    mag_out[_2mass_j_dex]=mag_in[_star_J_dex];
-    mag_out[_2mass_ks_dex]=mag_in[_star_K_dex];
-    mag_out[_2mass_h_dex] = mag_in[_star_H_dex];
-    mag_out[_johnson_B_dex] = mag_in[_star_B_dex];
-    mag_out[_johnson_V_dex] = mag_in[_star_V_dex];
-    mag_out[_sdss_u_dex] = mag_in[_star_u_dex];
-    mag_out[_sdss_g_dex] = mag_in[_star_g_dex];
-    mag_out[_sdss_r_dex] = mag_in[_star_r_dex];
-    mag_out[_sdss_i_dex] = mag_in[_star_i_dex];
-    mag_out[_sdss_z_dex] = mag_in[_star_z_dex];
-    mag_out[_wise_1_dex] = mag_in[_star_w1_dex];
-    mag_out[_wise_2_dex] = mag_in[_star_w2_dex];
-    mag_out[_wise_3_dex] = mag_in[_star_w3_dex];
-    mag_out[_wise_4_dex] = mag_in[_star_w4_dex];
-
+void get_mag_map(long long int flag, int *map_out){
     int hexadec_bits[hexadec_places];
 
     convert_to_hexadecimal(flag, hexadec_bits);
     int psrc=hexadec_bits[4];
 
+    //default (sdss)
+    map_out[_star_J_dex] = _2mass_j_dex;
+    map_out[_star_K_dex] = _2mass_ks_dex;
+    map_out[_star_H_dex] = _2mass_h_dex;
+    map_out[_star_B_dex] = _johnson_B_dex;
+    map_out[_star_V_dex] = _johnson_V_dex;
+    map_out[_star_u_dex] = _sdss_u_dex;
+    map_out[_star_g_dex] = _sdss_g_dex;
+    map_out[_star_r_dex] = _sdss_r_dex;
+    map_out[_star_i_dex] = _sdss_i_dex;
+    map_out[_star_z_dex] = _sdss_z_dex;
+    map_out[_star_y_dex] = _ps_y_dex;
+    map_out[_star_w1_dex] = _wise_1_dex;
+    map_out[_star_w2_dex] = _wise_2_dex;
+    map_out[_star_w3_dex] = _wise_3_dex;
+    map_out[_star_w4_dex] = _wise_4_dex;
+
     if(psrc==0 || psrc==1 || psrc==11){
         //B4 or ps1
-        mag_out[_sdss_g_dex] = bad_val-10.0;
-        mag_out[_sdss_r_dex] = bad_val-10.0;
-        mag_out[_sdss_i_dex] = bad_val-10.0;
-        mag_out[_sdss_z_dex] = bad_val-10.0;
-        mag_out[_ps_g_dex] = mag_in[_star_g_dex];
-        mag_out[_ps_r_dex] = mag_in[_star_r_dex];
-        mag_out[_ps_i_dex] = mag_in[_star_i_dex];
-        mag_out[_ps_z_dex] = mag_in[_star_z_dex];
-        mag_out[_ps_y_dex] = mag_in[_star_y_dex];
+        map_out[_star_g_dex] = _ps_g_dex;
+        map_out[_star_r_dex] = _ps_r_dex;
+        map_out[_star_i_dex] = _ps_i_dex;
+        map_out[_star_z_dex] = _ps_z_dex;
+        map_out[_star_y_dex] = _ps_y_dex;
     }
     else if(psrc==6 || psrc==7){
         //tycho or hipparcos
-        mag_out[_johnson_B_dex] = bad_val-10.0;
-        mag_out[_johnson_V_dex] = bad_val-10.0;
-        mag_out[_tycho_B_dex] = mag_in[_star_B_dex];
-        mag_out[_tycho_V_dex] = mag_in[_star_V_dex];
+        map_out[_star_B_dex] = _tycho_B_dex;
+        map_out[_star_V_dex] = _tycho_V_dex;
     }
     else if(psrc>12 || psrc<0){
         printf("psrc %d\n",psrc);
@@ -285,11 +266,10 @@ void get_mag_array(long long int flag, double *mag_in, double *mag_out){
         exit(1);
     }
 
-
 }
 
 
-int fit_star_mags(double *star_mags, double *best_offset, double *err_out){
+int fit_star_mags(double *star_mags, int *mag_map, double *best_offset, double *err_out){
     /*
     Read in a an array of mapped star mags.
     Return the row index of the best-fitting SED, e(b-v) combination
@@ -301,7 +281,7 @@ int fit_star_mags(double *star_mags, double *best_offset, double *err_out){
     double err,err_best;
 
     int n_valid=0;
-    for(ii=0;ii<n_mags;ii++){
+    for(ii=0;ii<n_star_mags-1;ii++){
         if(star_mags[ii]>bad_val){
             n_valid++;
         }
@@ -309,7 +289,7 @@ int fit_star_mags(double *star_mags, double *best_offset, double *err_out){
 
 
     j=0;
-    for(ii=0;ii<n_mags;ii++){
+    for(ii=0;ii<n_star_mags-1;ii++){
         if(star_mags[ii]>bad_val){
             valid_dex[j]=ii;
             j++;
@@ -325,8 +305,9 @@ int fit_star_mags(double *star_mags, double *best_offset, double *err_out){
 
     for(ii=0;ii<n_sed;ii++){
         err=0.0;
+
         for(j=0;j<n_valid-1;j++){
-            sed_color=sed_data[ii*n_mags+valid_dex[j]]-sed_data[ii*n_mags+valid_dex[j+1]];
+            sed_color=sed_data[ii*n_mags+mag_map[valid_dex[j]]]-sed_data[ii*n_mags+mag_map[valid_dex[j+1]]];
             err+=(sed_color-star_color[j])*(sed_color-star_color[j]);
             if(ii>0 && err>err_best){
                 break;
@@ -348,9 +329,11 @@ int fit_star_mags(double *star_mags, double *best_offset, double *err_out){
     double xx;
     err_out[0]=0.0;
     for(j=0;j<n_valid;j++){
-        xx=star_mags[valid_dex[j]]-sed_data[dex_best*n_mags+valid_dex[j]]-best_offset[0];
+        xx=star_mags[valid_dex[j]]-sed_data[dex_best*n_mags+mag_map[valid_dex[j]]]-best_offset[0];
         err_out[0]+=xx*xx;
     }
+
+    err_out[0] = sqrt(err_out[0])/n_valid;
 
     return dex_best;
 
@@ -690,8 +673,8 @@ int main(int iargc, char *argv[]){
 
     FILE *output;
 
-    double *mapped_star_mags;
-    mapped_star_mags=new double[n_mags];
+    int *mag_map;
+    mag_map = new int[n_star_mags-1];
 
     int i_chosen;
     double offset;
@@ -764,10 +747,10 @@ int main(int iargc, char *argv[]){
             fscanf(input,"%lld",&flag);
 
             // map the star's magnitudes onto the SED magnitudes
-            get_mag_array(flag, star_mags, mapped_star_mags);
+            get_mag_map(flag, mag_map);
 
             // choose the SED, E(B-V) pair that best matches the star's colors
-            i_chosen=fit_star_mags(mapped_star_mags, &offset, &err);
+            i_chosen=fit_star_mags(star_mags, mag_map, &offset, &err);
 
             raw_dex=sed_to_raw_map[i_chosen];
 
