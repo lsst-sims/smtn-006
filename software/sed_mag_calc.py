@@ -133,21 +133,26 @@ def get_mlt_phys(sed_name):
     Read in the name of an M/L/T dwarf SED and return
     its T_eff, metallicity, and log(surface gravity)
     """
-    if sed_name[6] == '-':
+
+    new_name = sed_name.replace('+','-').replace('a','-').split('-')
+
+    logg_sgn_dex = len(new_name[0])
+
+    if sed_name[logg_sgn_dex] == '-':
         logg_sgn = 1.0
-    elif sed_name[6] == '+':
+    elif sed_name[logg_sgn_dex] == '+':
         logg_sgn = -1.0
     else:
         raise RuntimeError('Cannot get logg_sgn for %s' % sed_name)
 
-    if sed_name[10] == '-':
+    metallicity_sgn_dex = len(new_name[0]) + len(new_name[1]) + 1
+
+    if sed_name[metallicity_sgn_dex] == '-':
         metallicity_sgn = -1.0
-    elif sed_name[10] == '+':
+    elif sed_name[metallicity_sgn_dex] == '+':
         metallicity_sgn = 1.0
     else:
         raise RuntimeError('Cannot get metallicity_sgn for %s' % sed_name)
-
-    new_name = sed_name.replace('+','-').replace('a','-').split('-')
 
     teff = 100.0*float(new_name[0][3:])
     metallicity = metallicity_sgn*float(new_name[2])
