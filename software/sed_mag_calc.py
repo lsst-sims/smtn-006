@@ -206,6 +206,10 @@ if __name__ == "__main__":
 
     bp_list_dict['LSST'] = get_bandpass_list('baseline', bp_name_dict['LSST'])
 
+    bp_name_dict['LSSTatm'] = ('total_u.dat', 'total_g.dat', 'total_r.dat',
+                               'total_i.dat', 'total_z.dat', 'total_y.dat')
+    bp_list_dict['LSSTatm'] = get_bandpass_list('baseline', bp_name_dict['LSSTatm'])
+
     bp_name_dict['Hipparcos-Tycho'] = ('hipparcos/hipparcos_hp.dat',
                                         'tycho/tycho_B.dat',
                                         'tycho/tycho_V.dat')
@@ -233,7 +237,7 @@ if __name__ == "__main__":
     print 'getting bandpasses took %f' % (time.time()-t_before_bp)
 
     bp_tag_list = ('2MASS', 'WISE', 'Johnson', 'Hipparcos-Tycho',
-        'PanStarrs', 'SDSS', 'LSST')
+        'PanStarrs', 'SDSS', 'LSST', 'LSSTatm')
 
     t_start = time.time()
 
