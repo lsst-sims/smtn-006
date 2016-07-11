@@ -17,7 +17,7 @@ if __name__ == "__main__":
     print ebv_list.min(),ebv_list.max()
 
     with open('ebv_spatial_grid.txt', 'w') as output_file:
-        output_file.write('# RA Dec integrated E(B-V)\n')
+        output_file.write('#RA Dec integrated E(B-V)\n')
         for lon, lat, ebv in zip(lon_list, lat_list, ebv_list):
             output_file.write('%.12f %.12f %.12f\n' % (np.degrees(lon), np.degrees(lat), ebv))
 
