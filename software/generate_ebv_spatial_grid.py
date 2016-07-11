@@ -12,12 +12,12 @@ if __name__ == "__main__":
 
     pt_list = rng.normal(0.0, scale=1.0, size=(n_grid, 3))
     lon_list_0, lat_list = sphericalFromCartesian(pt_list)
-    lon_list = np.array([yy if yy>0.0 else yy+360.0 for yy in lon_list_0])
+    lon_list = np.array([yy if yy>0.0 else yy+2.0*np.pi for yy in lon_list_0])
 
     assert lon_list.min() > 0.0
-    assert lon_list.max() < 360.0
-    assert lat_list.min() > -90.0
-    assert lat_list.max() < 90.0
+    assert lon_list.max() < 2.0*np.pi
+    assert lat_list.min() > -0.5*np.pi
+    assert lat_list.max() < 0.5*np.pi
 
     ebv_list = ee.calculateEbv(equatorialCoordinates=np.array([lon_list, lat_list]))
 
