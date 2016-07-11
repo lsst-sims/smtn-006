@@ -52,6 +52,12 @@ by sed_mag_calc.py
 #define _lsst_i_dex 26
 #define _lsst_z_dex 27
 #define _lsst_y_dex 28
+#define _lsst_u_atm_dex 29
+#define _lsst_g_atm_dex 30
+#define _lsst_r_atm_dex 31
+#define _lsst_i_atm_dex 32
+#define _lsst_z_atm_dex 33
+#define _lsst_y_atm_dex 34
 
 /*
 Each star in the input catalog only has, at most, 16 magnitudes.
@@ -84,7 +90,7 @@ exist to standardize that process.
 #define _star_w4_dex 14
 #define _star_sst_dex 15
 
-#define n_mags 29
+#define n_mags 35
 #define n_star_mags 16
 #define hexadec_places 8
 
@@ -795,7 +801,8 @@ int main(int iargc, char *argv[]){
         output=fopen(output_name, "w");
         fprintf(output,"#star_id ra dec mura mudec lon lat ");
         fprintf(output,"sed magnorm flux_factor E(B-V) Teff [Fe/H] log(g) ");
-        fprintf(output,"lsst_u lsst_g lsst_r lsst_i lsst_z lsst_y ");
+        fprintf(output,"lsst_u_noatm lsst_g_noatm lsst_r_noatm lsst_i_noatm lsst_z_noatm lsst_y_noatm ");
+        fprintf(output,"lsst_u_atm lsst_g_atm lsst_r_atm lsst_i_atm lsst_z_atm lsst_y_atm ");
         fprintf(output,"sdss_u(ext) sdss_g(ext) sdss_r(ext) sdss_i(ext) sdss_z(ext) ");
         fprintf(output,"sdss_u(raw) sdss_g(raw) sdss_r(raw) sdss_i(raw) sdss_z(raw) ");
         fprintf(output,"magnitude_residual\n");
@@ -848,6 +855,11 @@ int main(int iargc, char *argv[]){
             sed_data[i_chosen*n_mags+_lsst_u_dex]+offset,sed_data[i_chosen*n_mags+_lsst_g_dex]+offset,
             sed_data[i_chosen*n_mags+_lsst_r_dex]+offset,sed_data[i_chosen*n_mags+_lsst_i_dex]+offset,
             sed_data[i_chosen*n_mags+_lsst_z_dex]+offset,sed_data[i_chosen*n_mags+_lsst_y_dex]+offset);
+
+            fprintf(output,"%le %le %le %le %le %le ",
+            sed_data[i_chosen*n_mags+_lsst_u_atm_dex]+offset,sed_data[i_chosen*n_mags+_lsst_g_atm_dex]+offset,
+            sed_data[i_chosen*n_mags+_lsst_r_atm_dex]+offset,sed_data[i_chosen*n_mags+_lsst_i_atm_dex]+offset,
+            sed_data[i_chosen*n_mags+_lsst_z_atm_dex]+offset,sed_data[i_chosen*n_mags+_lsst_y_atm_dex]+offset);
 
             fprintf(output,"%le %le %le %le %le ",
             sed_data[i_chosen*n_mags+_sdss_u_dex]+offset,sed_data[i_chosen*n_mags+_sdss_g_dex]+offset,
