@@ -805,7 +805,7 @@ int main(int iargc, char *argv[]){
         fprintf(output,"lsst_u_atm lsst_g_atm lsst_r_atm lsst_i_atm lsst_z_atm lsst_y_atm ");
         fprintf(output,"sdss_u(ext) sdss_g(ext) sdss_r(ext) sdss_i(ext) sdss_z(ext) ");
         fprintf(output,"sdss_u(raw) sdss_g(raw) sdss_r(raw) sdss_i(raw) sdss_z(raw) ");
-        fprintf(output,"magnitude_residual\n");
+        fprintf(output,"color_residual\n");
 
         // read in the ' ' delimited file created with sed
         input=fopen(buffer_name,"r");
