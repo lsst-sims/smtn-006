@@ -123,7 +123,10 @@ def get_wd_phys(sed_name):
     """
     new_name = sed_name.replace('.','_').split('_')
     teff = float(new_name[-2])
-    logg = 0.1*float(new_name[2])
+    if new_name[1]!='He':
+        logg = 0.1*float(new_name[2])
+    else:
+        logg = 0.1*float(new_name[3])
 
     return teff, -999.0, logg
 
