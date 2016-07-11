@@ -799,7 +799,7 @@ int main(int iargc, char *argv[]){
         //control=fopen(control_name,"w");
 
         output=fopen(output_name, "w");
-        fprintf(output,"#star_id ra dec mura mudec lon lat ");
+        fprintf(output,"#dummy_htmid star_id ra dec mura mudec lon lat ");
         fprintf(output,"sed magnorm flux_factor E(B-V) Teff [Fe/H] log(g) ");
         fprintf(output,"lsst_u_noatm lsst_g_noatm lsst_r_noatm lsst_i_noatm lsst_z_noatm lsst_y_noatm ");
         fprintf(output,"lsst_u_atm lsst_g_atm lsst_r_atm lsst_i_atm lsst_z_atm lsst_y_atm ");
@@ -843,7 +843,7 @@ int main(int iargc, char *argv[]){
 
             lonLatFromRaDec(ra, dec, &lon, &lat);
 
-            fprintf(output,"%lld %.12le %.12le %.12le %.12le %.12le %.12le ",
+            fprintf(output,"0 %lld %.12le %.12le %.12le %.12le %.12le %.12le ",
             star_id, ra, dec, mura*1000.0, mudec*1000.0, lon, lat);
 
             fprintf(output,"%s %le %le %le ",
