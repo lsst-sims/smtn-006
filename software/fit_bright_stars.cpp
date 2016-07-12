@@ -319,22 +319,22 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     }
 
     for(ii=0;ii<n_sed;ii++){
-        if(ebv_grid[ii]>ebv_max && ii>0){
-            break;
-        }
-        err=0.0;
+        if(ebv_grid[ii]<=ebv_max){
 
-        for(j=0;j<n_valid-1;j++){
-            sed_color=sed_data[ii*n_mags+mag_map[valid_dex[j]]]-sed_data[ii*n_mags+mag_map[valid_dex[j+1]]];
-            err+=(sed_color-star_color[j])*(sed_color-star_color[j]);
-            if(ii>0 && err>err_best){
-                break;
+            err=0.0;
+
+            for(j=0;j<n_valid-1;j++){
+                sed_color=sed_data[ii*n_mags+mag_map[valid_dex[j]]]-sed_data[ii*n_mags+mag_map[valid_dex[j+1]]];
+                err+=(sed_color-star_color[j])*(sed_color-star_color[j]);
+                if(ii>0 && err>err_best){
+                    break;
+                }
             }
-        }
 
-        if(ii==0 || err<err_best){
-            dex_best=ii;
-            err_best=err;
+            if(ii==0 || err<err_best){
+                dex_best=ii;
+                err_best=err;
+             }
         }
     }
 
