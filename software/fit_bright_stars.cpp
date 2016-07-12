@@ -759,7 +759,6 @@ int main(int iargc, char *argv[]){
     double flux_factor;
 
     double err;
-    double t_start = double(time(NULL));
     int ct;
 
     // sfd control
@@ -782,7 +781,8 @@ int main(int iargc, char *argv[]){
     }
 
     double ebv_max;
-
+    double t_start = double(time(NULL));
+    int total_ct=0;
     // Loop over the csv files, performing the fits of all stars in those files
     for(i_file=0;i_file<n_input_files;i_file++){
         sprintf(buffer_name,"%s_buffer.txt",input_files[i_file]);
@@ -815,6 +815,7 @@ int main(int iargc, char *argv[]){
 
         // loop over all of the stars in the ' ' delimited file
         while(fscanf(input,"%lld",&star_id)>0){
+            total_ct++;
             ct++;
             fscanf(input,"%le %le %le %le\n",
             &ra, &dec, &mura, &mudec);
@@ -905,7 +906,7 @@ int main(int iargc, char *argv[]){
 
     }
 
-    printf("that took %e\n",double(time(NULL))-t_start);
+    printf("that took %e to do %d\n",double(time(NULL))-t_start,total_ct);
 
 }
 
