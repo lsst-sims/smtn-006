@@ -292,8 +292,8 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
 
 
     int ii,j;
-    int dex_best;
-    double err,err_best;
+    int dex_best=-1;
+    double err,err_best=1000000.0;
 
     int n_valid=0;
     for(ii=0;ii<n_star_mags-1;ii++){
@@ -326,7 +326,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
             for(j=0;j<n_valid-1;j++){
                 sed_color=sed_data[ii*n_mags+mag_map[valid_dex[j]]]-sed_data[ii*n_mags+mag_map[valid_dex[j+1]]];
                 err+=(sed_color-star_color[j])*(sed_color-star_color[j]);
-                if(ii>0 && err>err_best){
+                if(dex_best>=0 && err>err_best){
                     break;
                 }
             }
