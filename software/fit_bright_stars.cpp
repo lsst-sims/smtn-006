@@ -244,7 +244,7 @@ void get_mag_map(long long int flag, int *map_out){
 
     convert_to_hexadecimal(flag, hexadec_bits);
     int psrc=hexadec_bits[4];
-    printf("psrc %d\n",psrc);
+
     //default (sdss)
     map_out[_star_J_dex] = _2mass_j_dex;
     map_out[_star_K_dex] = _2mass_ks_dex;
@@ -343,22 +343,8 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
         best_offset[0]+=(star_mags[valid_dex[j]]-sed_data[dex_best*n_mags+mag_map[valid_dex[j]]]);
     }
     best_offset[0]=best_offset[0]/n_good;
-    printf("offset %e %e\n",best_offset[0],n_good);
+
     err_out[0]=sqrt(err_best)/(n_valid-1);
-
-    for(j=0;j<n_valid;j++){
-        printf("%d ",valid_dex[j]);
-    }
-    printf("\n");
-
-    for(j=0;j<n_valid;j++){
-        printf("%e ",star_mags[valid_dex[j]]);
-    }
-    printf("\n");
-    for(j=0;j<n_valid;j++){
-        printf("%e ",sed_data[dex_best*n_mags+mag_map[valid_dex[j]]]);
-    }
-    printf("\n\n");
 
     return dex_best;
 
@@ -845,7 +831,7 @@ int main(int iargc, char *argv[]){
             get_mag_map(flag, mag_map);
 
             ebv_max = get_ebv_max(ra, dec, ebv_ra, ebv_dec, ebv_ebv, n_ebv_spatial);
-            printf("ebv_max %e\n",ebv_max);
+
             // choose the SED, E(B-V) pair that best matches the star's colors
             i_chosen=fit_star_mags(star_mags, mag_map, ebv_data, ebv_max, &offset, &err);
 
