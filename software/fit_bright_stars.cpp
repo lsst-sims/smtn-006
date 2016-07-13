@@ -436,6 +436,8 @@ double get_ebv_max(double ra_in, double dec_in, double *ra_grid, double *dec_gri
         }
     }
 
+    return 0.2;
+
     return ebv_grid[min_dex];
 }
 
