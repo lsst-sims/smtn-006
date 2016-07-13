@@ -159,6 +159,7 @@ def assemble_grid(flag, star_mags, raw_grid):
 
     hdec = convert_to_hexadecimal(flag)
     src_flag = hdec[4]
+    print 'srcflag ',src_flag
 
     name_grid = ['2MASS_J','2MASS_Ks', '2MASS_H', 'johnson_B',
                 'johnson_V', 'sdss_u', 'sdss_g', 'sdss_r',
@@ -180,6 +181,7 @@ def assemble_grid(flag, star_mags, raw_grid):
         if star_mags[ix]<-90.0:
             dex_grid.pop(ix)
 
+    print 'dex_grid ',dex_grid
     return (raw_grid[dex_grid].transpose(),
             np.array([mm for mm in star_mags if mm > -90.0]))
 
@@ -214,6 +216,10 @@ def fit_star(star_mags, grid_in, ebv_max, ebv_cut_vals, ebv_cut_dexes):
     rms = np.sqrt(np.power(star_colors-color_grid[dex],2).sum())/len(star_colors)
 
     offset = (star_mags - grid_in[dex]).sum()/len(star_mags)
+    print 'offset ',offset,len(star_mags)
+    print star_mags
+    print grid_in[dex]
+    print '\n'
     return dex, rms, offset
 
 
