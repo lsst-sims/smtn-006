@@ -168,13 +168,13 @@ def assemble_grid(flag, star_mags, raw_grid):
     dex_grid = [8, 9, 18, 19, 20, 21, 22, 17, 0, 1, 2, 3, 4, 5, 6]
 
     if src_flag in (0, 1, 11):
-        name_grid[3] = 13
-        name_grid[4] = 14
-        name_grid[5] = 15
-        name_grid[6] = 16
+        dex_grid[3] = 13
+        dex_grid[4] = 14
+        dex_grid[5] = 15
+        dex_grid[6] = 16
     elif src_flag in (6, 7):
-        name_grid[0] = 11
-        name_grid[1] = 12
+        dex_grid[0] = 11
+        dex_grid[1] = 12
 
     for ix in range(len(dex_grid)-1,-1,-1):
         if star_mags[ix]<-90.0:
