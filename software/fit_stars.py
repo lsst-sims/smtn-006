@@ -307,8 +307,6 @@ if __name__ == "__main__":
                         lon, lat = galacticFromEquatorial(star_dict['ra'], star_dict['dec'])
                         ebv_max = ebv_calculator.calculateEbv(equatorialCoordinates=np.array([[np.radians(star_dict['ra'])],
                                                                                               [np.radians(star_dict['dec'])]]))
-                        ebv_max=0.2
-                        print 'ebv_max ',ebv_max
                         fit_grid, star_mags = assemble_grid(star_dict['flag'], star_dict['mags'], mag_grid)
 
                         dex,  rms, offset = fit_star(star_mags, fit_grid,
