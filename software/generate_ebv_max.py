@@ -6,6 +6,7 @@ from lsst.sims.photUtils import EBVbase
 if __name__ == "__main__":
 
     input_name = sys.argv[1]
+    output_name = sys.argv[2]
 
     dtype = np.dtype([('id', long),
                       ('ra', np.float), ('dec', np.float),
@@ -21,5 +22,4 @@ if __name__ == "__main__":
     data = np.genfromtxt(input_name, dtype=dtype, delimiter=',')
     ee = EBVbase()
     ebv = ee.calculateEbv(equatorialCoordinates=np.array([np.radians(data['ra']), np.radians(data['dec'])]))
-    out_name = input_name.split('/')[-1]+'_ebv_max.txt'
-    np.savetxt(out_name, ebv)
+    np.savetxt(output_name, ebv)
