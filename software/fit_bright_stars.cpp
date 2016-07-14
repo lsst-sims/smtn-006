@@ -888,8 +888,8 @@ int main(int iargc, char *argv[]){
         // sfd control
         //fclose(control);
 
-        //sprintf(cmd,"gzip -f %s",output_name);
-        //system(cmd);
+        sprintf(cmd,"gzip -f %s",output_name);
+        system(cmd);
 
         sprintf(cmd,"rm %s",buffer_name);
         system(cmd);
