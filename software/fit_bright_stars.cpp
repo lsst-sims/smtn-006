@@ -415,37 +415,12 @@ void lonLatFromRaDec(double ra, double dec, double *lon, double *lat){
 
 }
 
-
-double get_ebv_max(double ra_in, double dec_in, double *ra_grid, double *dec_grid, double *ebv_grid, int n_ebv_grid){
-
-    double ra_rad=ra_in*pi/180.0;
-    double dec_rad=dec_in*pi/180.0;
-
-    int i,min_dex;
-    double dd,dd_min;
-    double t1,t2;
-    dd_min=1000000.0;
-    min_dex=-1;
-    for(i=0;i<n_ebv_grid;i++){
-        t1=power(sin(dec_rad*0.5-dec_grid[i]*0.5),2);
-        t2 = cos(dec_rad)*cos(dec_grid[i])*power(sin(0.5*ra_rad-0.5*ra_grid[i]),2);
-        dd=2.0*asin(sqrt(t1+t2));
-        if(min_dex<0 || dd<dd_min){
-            min_dex=i;
-            dd_min=dd;
-        }
-    }
-
-    return ebv_grid[min_dex];
-}
-
 int main(int iargc, char *argv[]){
 
-    if(iargc<5){
-        printf("args: sed_mag_grid raw_sdss_mag ebv_spatial_grid list_of_inputs\n\n");
+    if(iargc<4){
+        printf("args: sed_mag_grid raw_sdss_mag list_of_inputs\n\n");
         printf("sed_mag_grid is the output of sed_mag_calc.py\n");
         printf("raw_sdss_mag is the output of get_raw_sdss_mags.py\n");
-        printf("ebv_spatial_grid is a text file that gives the integrated SFD extinction for RA, Dec pairs\n");
         printf("list_of_inputs is a text file listing the gzipped csv files to process\n");
         exit(1);
     }
@@ -453,8 +428,6 @@ int main(int iargc, char *argv[]){
     char sed_grid_name[letters];
 
     char raw_grid_name[letters];
-
-    char ebv_spatial_grid_name[letters];
 
     char list_of_inputs[letters];
     int i,j;
@@ -470,12 +443,7 @@ int main(int iargc, char *argv[]){
     raw_grid_name[i]=0;
 
     for(i=0;i<letters-1 && argv[3][i]!=0;i++){
-        ebv_spatial_grid_name[i]=argv[3][i];
-    }
-    ebv_spatial_grid_name[i]=0;
-
-    for(i=0;i<letters-1 && argv[4][i]!=0;i++){
-        list_of_inputs[i]=argv[4][i];
+        list_of_inputs[i]=argv[3][i];
     }
     list_of_inputs[i]=0;
 
@@ -703,38 +671,6 @@ int main(int iargc, char *argv[]){
     }
     fclose(input);
 
-    int n_ebv_spatial;
-    double *ebv_ra, *ebv_dec, *ebv_ebv;
-    input=fopen(ebv_spatial_grid_name, "r");
-    for(i=0;i<3;i++){
-        fscanf(input,"%s", word);
-    }
-    for(n_ebv_spatial=0;fscanf(input,"%le",&xx)>0;n_ebv_spatial++){
-        for(i=0;i<2;i++){
-            fscanf(input,"%le",&xx);
-        }
-    }
-    fclose(input);
-
-    printf("n_ebv_spatial %d\n",n_ebv_spatial);
-    ebv_ra = new double[n_ebv_spatial];
-    ebv_dec = new double[n_ebv_spatial];
-    ebv_ebv = new double[n_ebv_spatial];
-
-    input=fopen(ebv_spatial_grid_name,"r");
-    for(i=0;i<3;i++){
-        fscanf(input,"%s", word);
-    }
-    for(i=0;i<n_ebv_spatial;i++){
-        fscanf(input,"%le",&ebv_ra[i]);
-        fscanf(input,"%le",&ebv_dec[i]);
-        fscanf(input,"%le",&ebv_ebv[i]);
-
-        //convert to radians
-        ebv_ra[i]*=pi/180.0;
-        ebv_dec[i]*=pi/180.0;
-    }
-
     int i_file;
     char cmd[2*letters];
 
@@ -780,7 +716,10 @@ int main(int iargc, char *argv[]){
         }
     }
 
-    double ebv_max;
+    char ebv_max_name[2*letters];
+
+    double *ebv_max=NULL;
+    int n_ebv_max,i_line;
     double t_start = double(time(NULL));
     int total_ct=0;
     // Loop over the csv files, performing the fits of all stars in those files
@@ -792,6 +731,23 @@ int main(int iargc, char *argv[]){
         sprintf(cmd,"gunzip -c %s | sed 's/,/ /g' | sed 's/  / /g' > %s",
         input_files[i_file],buffer_name);
         system(cmd);
+
+        sprintf(ebv_max_name,"%s_ebv_max.txt",input_files[i_file]);
+
+        sprintf(cmd,"python generate_ebv_max.py %s %s",input_files[i_file],ebv_max_name);
+        system(cmd);
+
+        input=fopen(ebv_max_name, "r");
+        for(n_ebv_max=0;fscanf(input,"%le",&xx)>0;n_ebv_max++);
+        fclose(input);
+        if(ebv_max!=NULL){
+            delete [] ebv_max;
+        }
+        ebv_max=new double[n_ebv_max];
+        input=fopen(ebv_max_name, "r");
+        for(i=0;i<n_ebv_max;i++){
+            fscanf(input,"%le",&ebv_max[i]);
+        }
 
         sprintf(output_name,"%s_ebv_grid_fit.txt", input_files[i_file]);
 
@@ -814,7 +770,11 @@ int main(int iargc, char *argv[]){
         printf("looping at %e\n",double(time(NULL))-t_start);
 
         // loop over all of the stars in the ' ' delimited file
-        while(fscanf(input,"%lld",&star_id)>0){
+        for(i_line=0;fscanf(input,"%lld",&star_id)>0;i_line++){
+            if(i_line>=n_ebv_max){
+                printf("WARNING i_line %d n_ebv_max %d\n",i_line,n_ebv_max);
+                exit(1);
+            }
             total_ct++;
             ct++;
             fscanf(input,"%le %le %le %le\n",
@@ -828,10 +788,8 @@ int main(int iargc, char *argv[]){
             // map the star's magnitudes onto the SED magnitudes
             get_mag_map(flag, mag_map);
 
-            ebv_max = get_ebv_max(ra, dec, ebv_ra, ebv_dec, ebv_ebv, n_ebv_spatial);
-
             // choose the SED, E(B-V) pair that best matches the star's colors
-            i_chosen=fit_star_mags(star_mags, mag_map, ebv_data, ebv_max, &offset, &err);
+            i_chosen=fit_star_mags(star_mags, mag_map, ebv_data, ebv_max[i_line], &offset, &err);
 
             raw_dex=sed_to_raw_map[i_chosen];
 
@@ -901,6 +859,8 @@ int main(int iargc, char *argv[]){
         //system(cmd);
 
         sprintf(cmd,"rm %s",buffer_name);
+        system(cmd);
+        sprintf(cmd,"rm %s",ebv_max_name);
         system(cmd);
         printf("%s in %e\n",input_files[i_file],double(time(NULL))-t_start);
 
