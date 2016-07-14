@@ -417,35 +417,55 @@ void lonLatFromRaDec(double ra, double dec, double *lon, double *lat){
 
 int main(int iargc, char *argv[]){
 
-    if(iargc<4){
-        printf("args: sed_mag_grid raw_sdss_mag list_of_inputs\n\n");
-        printf("sed_mag_grid is the output of sed_mag_calc.py\n");
-        printf("raw_sdss_mag is the output of get_raw_sdss_mags.py\n");
-        printf("list_of_inputs is a text file listing the gzipped csv files to process\n");
+    if(iargc==1){
+        printf("args:\n");
+        printf("-m: sed_mag_grid is the output of sed_mag_calc.py\n");
+        printf("-e: raw_sdss_mag is the output of get_raw_sdss_mags.py\n");
+        printf("-i: list_of_inputs is a text file listing the gzipped csv files to process\n");
+        printf("-o: output_dir is the directory to put output\n");
         exit(1);
     }
 
     char sed_grid_name[letters];
-
     char raw_grid_name[letters];
-
     char list_of_inputs[letters];
+    char output_dir[letters];
     int i,j;
 
-    for(i=0;i<letters-1 && argv[1][i]!=0;i++){
-        sed_grid_name[i]=argv[1][i];
+    for(i=1;i<iargc;i++){
+        if(argv[i][0]=='-'){
+            switch(argv[i][1]){
+                case 'm':
+                    i++;
+                    for(j=0;j<letters-1 && argv[i][j]!=0;j++){
+                        sed_grid_name[j]=argv[i][j];
+                    }
+                    sed_grid_name[j]=0;
+                    break;
+                case 'e':
+                    i++;
+                    for(j=0;j<letters-1 && argv[i][j]!=0;j++){
+                        raw_grid_name[j]=argv[i][j];
+                    }
+                    raw_grid_name[j]=0;
+                    break;
+                case 'i':
+                    i++;
+                    for(j=0;j<letters-1 && argv[i][j]!=0;j++){
+                        list_of_inputs[j]=argv[i][j];
+                    }
+                    list_of_inputs[j]=0;
+                    break;
+                case 'o':
+                    i++;
+                    for(j=0;j<letters-1 && argv[i][j]!=0;j++){
+                        output_dir[j]=argv[i][j];
+                    }
+                    output_dir[j]=0;
+                    break;
+            }
+        }
     }
-    sed_grid_name[i]=0;
-
-    for(i=0;i<letters-1 && argv[2][i]!=0;i++){
-        raw_grid_name[i]=argv[2][i];
-    }
-    raw_grid_name[i]=0;
-
-    for(i=0;i<letters-1 && argv[3][i]!=0;i++){
-        list_of_inputs[i]=argv[3][i];
-    }
-    list_of_inputs[i]=0;
 
     printf("%s\n%s\n%s\n",sed_grid_name,raw_grid_name,list_of_inputs);
 
@@ -722,8 +742,21 @@ int main(int iargc, char *argv[]){
     int n_ebv_max,i_line;
     double t_start = double(time(NULL));
     int total_ct=0;
+    char highest_name[letters];
     // Loop over the csv files, performing the fits of all stars in those files
     for(i_file=0;i_file<n_input_files;i_file++){
+
+        for(i=0,j=0;i<letters && input_files[i_file][j]!=0;j++){
+            if(input_files[i_file][j]=='/'){
+                i=0;
+            }
+            else{
+                highest_name[i]=input_files[i_file][j];
+                i++;
+            }
+        }
+        highest_name[i]=0;
+
         sprintf(buffer_name,"%s_buffer.txt",input_files[i_file]);
 
         // unzip the csv file and use sed to make it ' ' delimited, rather than ',' delimited
@@ -749,7 +782,7 @@ int main(int iargc, char *argv[]){
             fscanf(input,"%le",&ebv_max[i]);
         }
 
-        sprintf(output_name,"%s_ebv_grid_fit.txt", input_files[i_file]);
+        sprintf(output_name,"%s/%s_ebv_grid_fit.txt", output_dir, highest_name);
 
         // sfd control
         //sprintf(control_name,"%s_control.txt", input_files[i_file]);
@@ -831,7 +864,7 @@ int main(int iargc, char *argv[]){
             raw_sdss_mags[raw_dex][2]+offset, raw_sdss_mags[raw_dex][3]+offset,
             raw_sdss_mags[raw_dex][4]+offset);
 
-            fprintf(output,"%le %s",err,input_files[i_file]);
+            fprintf(output,"%le %s",err,highest_name);
             fprintf(output,"\n");
 
             // sfd control
