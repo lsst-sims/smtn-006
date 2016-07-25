@@ -837,8 +837,6 @@ int main(int iargc, char *argv[]){
             // choose the SED, E(B-V) pair that best matches the star's colors
             i_chosen=fit_star_mags(star_mags, mag_map, ebv_data, ebv_max_scalar, &offset, &err);
 
-            printf("i_chosen %d ebv_max %e\n",i_chosen,ebv_max[i_line]);
-
             raw_dex=sed_to_raw_map[i_chosen];
 
             if(raw_dex<0){
@@ -895,7 +893,6 @@ int main(int iargc, char *argv[]){
             //star_mags[_star_u_dex], star_mags[_star_g_dex],
             //star_mags[_star_r_dex], star_mags[_star_i_dex],
             //star_mags[_star_z_dex]);
-            printf("moving on\n");
 
         }
         fclose(input);
