@@ -632,6 +632,7 @@ int main(int iargc, char *argv[]){
     sed_names=new char*[n_sed];
     sed_data=new double[n_sed*n_mags];
     ebv_data=new double[n_sed];
+    double ebv_min=100.0;
 
 
     for(i=0;i<n_sed;i++){
@@ -646,6 +647,9 @@ int main(int iargc, char *argv[]){
     for(i=0;i<n_sed;i++){
         fscanf(input,"%s",sed_names[i]);
         fscanf(input,"%le",&ebv_data[i]);
+        if(ebv_data[i]<ebv_min){
+            ebv_min=ebv_data[i];
+        }
 
         for(j=0;j<n_mags;j++){
             fscanf(input,"%le",&sed_data[i*n_mags+j]);
@@ -739,6 +743,7 @@ int main(int iargc, char *argv[]){
     char ebv_max_name[2*letters];
 
     double *ebv_max=NULL;
+    double ebv_max_scalar;
     int n_ebv_max,i_line;
     double t_start = double(time(NULL));
     int total_ct=0;
@@ -821,8 +826,16 @@ int main(int iargc, char *argv[]){
             // map the star's magnitudes onto the SED magnitudes
             get_mag_map(flag, mag_map);
 
+            // make sure that ebv_max fits in the grid of ebv we have input
+            if(ebv_max[i_line]>ebv_min){
+                ebv_max_scalar=ebv_max[i_line];
+            }
+            else{
+                ebv_max_scalar=ebv_min+1.0e-6;
+            }
+
             // choose the SED, E(B-V) pair that best matches the star's colors
-            i_chosen=fit_star_mags(star_mags, mag_map, ebv_data, ebv_max[i_line], &offset, &err);
+            i_chosen=fit_star_mags(star_mags, mag_map, ebv_data, ebv_max_scalar, &offset, &err);
 
             printf("i_chosen %d ebv_max %e\n",i_chosen,ebv_max[i_line]);
 
