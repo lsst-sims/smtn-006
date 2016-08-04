@@ -7,9 +7,6 @@ of that file are
 
 sed file name
 E(B-V)
-T_eff
-[Fe/H]
-log(surface gravity)
 2MASS J magnitude
 2MASS H magnitude
 2MASS Ks magnitude

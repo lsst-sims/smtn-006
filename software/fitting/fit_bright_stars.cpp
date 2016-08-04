@@ -420,7 +420,7 @@ int main(int iargc, char *argv[]){
     if(iargc==1){
         printf("args:\n");
         printf("-m: sed_mag_grid is the output of sed_mag_calc.py\n");
-        printf("-e: raw_sdss_mag is the output of get_raw_sdss_mags.py\n");
+        printf("-e: raw_sdss_mag is the output of ebv_independent_calc.py\n");
         printf("-i: list_of_inputs is a text file listing the gzipped csv files to process\n");
         printf("-o: output_dir is the directory to put output\n");
         exit(1);

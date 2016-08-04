@@ -3,8 +3,8 @@ This script crawls through sims_sed_library and computes the unnormalized,
 un-extincted SDSS magnitudes and magNorms (magnitudes in the Imsim Bandpass)
 of every stellar spectrum (main sequence, white dwarf, and M/L/T dwarf).
 
-The results are output to the text file raw_sdss_mags.txt, which is meant
-to be used by fit_bright_stars.cpp
+The results are output to the text file ebv_independent_data.txt, which is
+meant to be used by fit_bright_stars.cpp
 """
 
 from __future__ import with_statement
