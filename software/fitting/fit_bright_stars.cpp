@@ -1,5 +1,5 @@
 /*
-This code reads in the outputs from get_raw_sdss_mags.py
+This code reads in the outputs from ebv_independent_calc.py
 and sed_mag_calc.py as well as a list of gzipped csv
 files (the raw inputs provided by Dave Monet) and finds
 the best fit SED, E(B-V) pair for each star in the
@@ -419,8 +419,8 @@ int main(int iargc, char *argv[]){
 
     if(iargc==1){
         printf("args:\n");
-        printf("-m: sed_mag_grid is the output of sed_mag_calc.py\n");
-        printf("-e: raw_sdss_mag is the output of ebv_independent_calc.py\n");
+        printf("-m: magnitude_grid is the output of sed_mag_calc.py\n");
+        printf("-e: ebv_independent_data is the output of ebv_independent_calc.py\n");
         printf("-i: list_of_inputs is a text file listing the gzipped csv files to process\n");
         printf("-o: output_dir is the directory to put output\n");
         exit(1);
