@@ -1,8 +1,9 @@
 """
 This script reads in a sub-set of the raw csv files provided by Dave Monet,
-queries the CatSim database for the stars that come from those files, and
-then generates density plots of (input mag vs model mag - input mag) and
-(model mag - input mag vs color residual)
+queries the CatSim database for the stars that come from those files, aggregates
+the data into 0.1 magnitude bins in (input magnitude, magnitude residual)
+space and (magnitude residual, color residual) space, and then outputs these
+grids into text files which can be plotted with plot_magnitude_grids.py
 """
 
 
