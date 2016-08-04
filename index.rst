@@ -47,10 +47,13 @@ catalog of bright stars for use in simulating the distribution of guide stars.
 The schema of this raw catalog is available in the file
 ``software/README.sstrc5`` of
 `this github repository <https://github.com/lsst-sims/smtn-006>`_.  The catalog
-consisted of 645 million stars with RA, Dec, proper motion and magnitudes taken
-from one of 10 provenance catalogs as detailed in the README: USNO-B4, 2MASS,
-2MASS Extended Source Catalog, WISE, PPMXL, SDSS DR7, PS1 Ubercal, Hipparcos +
-Tycho 2, APASS DR7+8, or GCVS and Lepine-Shara.
+consists of 645 million stars with RA, Dec, proper motion and magnitudes taken
+from ca combination of 10 provenance catalogs as detailed in the README:
+USNO-B4, 2MASS, 2MASS Extended Source Catalog, WISE, PPMXL, SDSS DR7,
+PS1 Ubercal, Hipparcos + Tycho 2, APASS DR7+8, or GCVS and Lepine-Shara.
+Magnitudes provided are a subset of (B, V, u, g, r, i, z, y, J, H, K, w1,
+w2, w3, w4, SST) as detailed in the Readme.  Not all stars have the same
+subset of magnitudes measured.
 
 Fitting to LSST magnitudes
 ==========================
@@ -61,28 +64,28 @@ from the CatSim SED library and assign an E(B-V) value to each.  Because none
 of the provided catalogs included parallax information, we decided to fit E(B-V)
 values heuristically.  For each SED in ``sims_sed_library``, we calculated
 the catalog magnitudes (those contained in the original catalog provided by
-Dave Monet) along a grid of E(B-V) values.  We then iterated over the stars in
-the input catalog, finding the best-fit combination of [SED, E(B-V) value].
+Dave Monet) along a grid of E(B-V) values.  For each star in
+the input catalog, we found the best-fit combination of [SED, E(B-V) value].
 We took this E(B-V) value to be the truest amount of dust extinction between
 the Earth and the star.  The prescription for performing this fit is as follows
 (all of the software reference below can be found in the ``software/fitting/``
 directory of `this github repository <https://github.com/lsst-sims/smtn-006>`_)
 
 1. Run the script ``sed_mag_calc.py``.  This will crawl through all of the
-   stellar SEDs in `sims_sed_library` and, for each, will calculate the necessary
+   stellar SEDs in ``sims_sed_library`` and, for each, will calculate the necessary
    magnitudes along our grid of E(B-V).  This grid of E(B-V) and magnitude values
-   will be saved to the file `magnitude_grid.txt`. Note: The E(B-V) grid used is
+   will be saved to the file ``magnitude_grid.txt``. Note: The E(B-V) grid used is
    specified in the first few lines of the ``if __name__ == "main"`` block of the
    script.  It is currently: 0.001 <= E(B-V) < 0.01 in 0.001 steps;
    0.01 <= E(B-V) < 0.3 in 0.01 steps; 0.3 <= E(B-V) < 7.0 in 0.1 steps.
 
 2. Run the script ``ebv_independent_calc.py``.  This will crawl through all of
-   the stellar SEDs in `sims_sed_library` and, for each, will calculate the
+   the stellar SEDs in ``sims_sed_library`` and, for each, will calculate the
    E(B-V)-independent data (normalizing magnitude, Teff, metallicity, log(g) and
    unextincted SDSS magnitudes) required by CatSim.  This data will be written to
    the text file ``ebv_independent_data.txt``.
 
-3. Assemble a text file containing a list of the raw ``.csv.gz``files provided
+3. Assemble a text file containing a list of the raw ``.csv.gz`` files provided
    by Dave Monet that you would like to fit (this is done so that multiple instances
    of step 5 can be run in parallel without stepping on each other).
 
@@ -102,8 +105,8 @@ The data columns produced by ``fit_bright_stars.cpp`` are as follows
 * dec -- in degrees (from input catalog)
 * mura -- RA proper motion in milliarcseconds per year (from input catalog)
 * mudec -- Dec proper motion in milliarcseconds per year (from input catalog)
-* lon -- galactic longitude in degrees (calculated by `fit_bright_stars.cpp`)
-* lat -- galactic latitude in degrees (calculated by `fit_bright_stars.cpp`)
+* lon -- galactic longitude in degrees (calculated by ``fit_bright_stars.cpp``)
+* lat -- galactic latitude in degrees (calculated by ``fit_bright_stars.cpp``)
 * sed -- the name of the SED in ``sims_sed_library`` associated with the star
   (from the fit)
 * magnorm -- the observed magnitude (before dust extinction) of the SED in the
@@ -128,7 +131,7 @@ The data columns produced by ``fit_bright_stars.cpp`` are as follows
 Schema in CatSim database
 =========================
 
-The files produced by ``fit_bright_stars.cpp`` are ingested into the CatSim
+The files produced by ``fit_bright_stars.cpp`` were ingested into the CatSim
 database and manipulated to match the schema of the other star tables on the
 database.  This database can be accessed by following the instructions `here
 <https://confluence.lsstcorp.org/display/SIM/Accessing+the+UW+CATSIM+Database>`_.
@@ -141,11 +144,13 @@ in that table are:
   this is different from the star_id column referenced above.  Together,
   htmid and simobjid uniquely identify each star.
 
-* catlaogid -- the same as star_id above (the integer identifying the star
+* catalogid -- the same as star_id above (the integer identifying the star
   in the input catalog)
 
 * source_file -- the name of the ``.csv.gz`` file from which the star was read.
-  Together, source_file and catalogid uniquely identify each star.
+  Together, source_file and catalogid uniquely identify each star.  Note that
+  stars with different source_files can have the same catalogid.  This is a
+  feature of the input catalog.
 
 * ra -- in degrees
 
@@ -165,7 +170,7 @@ in that table are:
   the star's magnitudes
 
 * flux_factor -- the multiplicative factor by which you scale the SED to match
-  the star's magnitudes (degenerate with mag_norm
+  the star's magnitudes (degenerate with mag_norm)
 
 * ebv -- the best-fit E(B-V) value associated with the star and SED
 
@@ -189,7 +194,7 @@ in that table are:
 * sdssu, sdssg, sdssr, sdssi, sdssz, -- the apparent SDSS magnitudes
   negelecting Milky Way dust extinction
 
-* residual -- the RMS colorresidual between the input stellar colors
+* residual -- the RMS color residual between the input stellar colors
   and the colors of the best-fit SED and E(B-V) pair (in the input catalog
   magnitudes measured for that star).
 
@@ -209,9 +214,9 @@ text files and use Matplotlib to produce plots.  The useful groups of scripts ar
 * ``dec_vs_mag.py`` queries the CatSim database for all stars between -20.0 < RA < 20.0
   and produces a density plot of mangitude versus Dec in each of the LSST bands.
 
-* ``stellar_density_control_arrays.py reads in the original ``.csv.gz`` files and compiles
+* ``stellar_density_control_arrays.py`` reads in the original ``.csv.gz`` files and compiles
   them into HEALPIX maps of number density in 0.5 magnitude bins in the input
-  (u, g, r, i, z, y) bands.  These HEALPIX maps are output to text files as simple numpy
+  (u, g, r, i, z, y) bands.  These HEALPIX maps are outputted to text files as simple numpy
   arrays of the number of stars in each HEALPIXel.  ``stellar_density_get_arrays.py``
   queries the CatSim database and assembles the stars into HEALPIX maps of number density
   in 0.5 magnitude bins in each of the LSST bands.  ``stellar_density_comparsions.py`` reads
@@ -222,7 +227,7 @@ text files and use Matplotlib to produce plots.  The useful groups of scripts ar
 
 * ``validate_magnitudes.py`` loops over all of the stars and compiles the number of stars
   in 0.1 magnitudes bins in both (input magnitude, magnitude residual) space as well as
-  (magnitude residual, color residual) space.  These grids are output as text files.
+  (magnitude residual, color residual) space.  These grids are outputted as text files.
   ``plot_magnitude_grids.py`` reads in these text files and produces density plots in both
   of those parameter spaces, as well as cumulative distributions of stars as a function of
   magnitude residual with different cuts applied to color residual.
