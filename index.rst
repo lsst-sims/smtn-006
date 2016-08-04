@@ -71,7 +71,10 @@ the Earth and the star.  The prescription for performing this fit is as follows
 (all of the software reference below can be found in the ``software/fitting/``
 directory of `this github repository <https://github.com/lsst-sims/smtn-006>`_)
 
-1. Run the script ``sed_mag_calc.py``.  This will crawl through all of the
+1. `Set up <https://confluence.lsstcorp.org/display/SIM/Catalogs+and+MAF>`_
+   the LSST Simulations Stack.
+
+2. Run the script ``sed_mag_calc.py``.  This will crawl through all of the
    stellar SEDs in ``sims_sed_library`` and, for each, will calculate the necessary
    magnitudes along our grid of E(B-V).  This grid of E(B-V) and magnitude values
    will be saved to the file ``magnitude_grid.txt``. Note: The E(B-V) grid used is
@@ -79,22 +82,28 @@ directory of `this github repository <https://github.com/lsst-sims/smtn-006>`_)
    script.  It is currently: 0.001 <= E(B-V) < 0.01 in 0.001 steps;
    0.01 <= E(B-V) < 0.3 in 0.01 steps; 0.3 <= E(B-V) < 7.0 in 0.1 steps.
 
-2. Run the script ``ebv_independent_calc.py``.  This will crawl through all of
+3. Run the script ``ebv_independent_calc.py``.  This will crawl through all of
    the stellar SEDs in ``sims_sed_library`` and, for each, will calculate the
    E(B-V)-independent data (normalizing magnitude, Teff, metallicity, log(g) and
    unextincted SDSS magnitudes) required by CatSim.  This data will be written to
    the text file ``ebv_independent_data.txt``.
 
-3. Assemble a text file containing a list of the raw ``.csv.gz`` files provided
+4. Assemble a text file containing a list of the raw ``.csv.gz`` files provided
    by Dave Monet that you would like to fit (this is done so that multiple instances
-   of step 5 can be run in parallel without stepping on each other).
+   of step 6 can be run in parallel without stepping on each other).  Each file should
+   be listed on a separate line.  Make sure to include the full path to each file, so
+   ``fit_bright_stars.cpp`` can find it.
 
-4. Compile ``fit_bright_stars.cpp`` like ``g++ -o fit fit_bright_stars.cpp``
+5. Compile ``fit_bright_stars.cpp`` like ``g++ -o fit fit_bright_stars.cpp``
 
-5. Run ``fit -m magnitude_grid.txt -e ebv_independent_data -i input_list -o output_dir``.
+6. Run ``fit -m magnitude_grid.txt -e ebv_independent_data -i input_list -o output_dir``.
    This will loop over all of the ``.csv.gz`` files specified in your ``input_list``
-   (see step 3) and, for each, produce a text file ``output_dir/[csv name]_ebv_grid_fit.txt``
-   containing all of the data needed for ingest into CatSim.
+   (see step 4) and, for each, produce a text file ``output_dir/[csv name]_ebv_grid_fit.txt``
+   containing all of the data needed for ingest into CatSim.  Note: it is very important
+   that ``fit`` be run in the same directory as ``generate_ebv_max.py``.
+   ``fit_bright_stars.cpp`` uses ``generate_ebv_max.py`` (which uses the LSST Simulations
+   Stack) to calculate the maximum value of E(B-V) at each RA, Dec position.  When fitting
+   for E(B-V), ``fit_bright_stars.cpp`` does not let E(B-V) exceed this maximum value.
 
 The data columns produced by ``fit_bright_stars.cpp`` are as follows
 
