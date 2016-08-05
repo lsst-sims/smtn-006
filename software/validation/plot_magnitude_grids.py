@@ -42,6 +42,12 @@ if __name__ == "__main__":
     data_dir = "mag_valid_grids"
     output_dir = "mag_figs"
 
+    # user-specified cuts in color residual
+    # to examine the effect of throwing out poor
+    # fits on the cumulative distribution in
+    # magnitude residual.  color_colors denotes
+    # the colors matplotlib will use to overplot
+    # the resulting distribution.
     color_cuts = (3.0, 1.0, 0.75, 0.5)
     color_colors = ('r', 'b', 'm', 'g')
 
