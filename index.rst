@@ -114,8 +114,8 @@ The data columns produced by ``fit_bright_stars.cpp`` are as follows
 * htmid -- a place holder for an integer calculated by the database on ingest
 * star_id -- the unique integer used to identify the star in the input catalog
   (from input catalog)
-* ra -- in degrees (from input catalog)
-* dec -- in degrees (from input catalog)
+* ra -- in degrees (J2000; from input catalog)
+* dec -- in degrees (J2000; from input catalog)
 * mura -- RA proper motion in milliarcseconds per year (from input catalog)
 * mudec -- Dec proper motion in milliarcseconds per year (from input catalog)
 * lon -- galactic longitude in degrees (calculated by ``fit_bright_stars.cpp``)
