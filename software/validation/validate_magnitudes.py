@@ -91,7 +91,8 @@ if __name__ == "__main__":
 
                 results = db.get_arbitrary_chunk_iterator(cmd, dtype=query_dtype, chunk_size=100000)
 
-                ct = -1
+                ct = -1  # start at -1 so that we can increment ct as soon as we
+                         # read each line
                 for chunk in results:
                     print "    chunk ",ct,time.time()-t_start
                     for line in chunk:
