@@ -53,7 +53,11 @@ USNO-B4, 2MASS, 2MASS Extended Source Catalog, WISE, PPMXL, SDSS DR7,
 PS1 Ubercal, Hipparcos + Tycho 2, APASS DR7+8, or GCVS and Lepine-Shara.
 Magnitudes provided are a subset of (B, V, u, g, r, i, z, y, J, H, K, w1,
 w2, w3, w4, SST) as detailed in the Readme.  Not all stars have the same
-subset of magnitudes measured.
+subset of magnitudes measured.  This raw input catalog is stored on
+the University of Washington network file system in the directory
+``/astro/store/pogo1/monetBrightStars``.  It has been sub-divided into six
+sub-directories corresponding to the six physical optical disks on which it was
+delivered to us.
 
 Fitting to LSST magnitudes
 ==========================
