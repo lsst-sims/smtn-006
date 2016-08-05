@@ -13,6 +13,11 @@ import time
 
 if __name__ == "__main__":
 
+    # grid step size in magnitude and declination
+    # can be set to whatever the user wants
+    dmag = 0.1
+    ddec = 0.1
+
     t_start = time.time()
 
     output_file_name = "mag_vs_dec.eps"
@@ -39,9 +44,6 @@ if __name__ == "__main__":
 
     results = db.get_arbitrary_chunk_iterator(cmd, dtype=query_dtype,
                                               chunk_size=100000)
-
-    dmag = 0.1
-    ddec = 0.1
 
     total_stars = 0
 
