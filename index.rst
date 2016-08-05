@@ -48,7 +48,7 @@ The schema of this raw catalog is available in the file
 ``software/README.sstrc5`` of
 `this github repository <https://github.com/lsst-sims/smtn-006>`_.  The catalog
 consists of 645 million stars with RA, Dec, proper motion and magnitudes taken
-from ca combination of 10 provenance catalogs as detailed in the README:
+from a combination of 10 provenance catalogs as detailed in the README:
 USNO-B4, 2MASS, 2MASS Extended Source Catalog, WISE, PPMXL, SDSS DR7,
 PS1 Ubercal, Hipparcos + Tycho 2, APASS DR7+8, or GCVS and Lepine-Shara.
 Magnitudes provided are a subset of (B, V, u, g, r, i, z, y, J, H, K, w1,
