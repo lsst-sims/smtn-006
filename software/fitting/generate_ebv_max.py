@@ -37,4 +37,5 @@ if __name__ == "__main__":
     data = np.genfromtxt(input_name, dtype=dtype, delimiter=',')
     ee = EBVbase()   # an instantiation of EBVbase from which to do calculations
     ebv = ee.calculateEbv(equatorialCoordinates=np.array([np.radians(data['ra']), np.radians(data['dec'])]))
+    # ebv is now a numpy array of E(B-V) values at the RA, Dec values contained in the input file.
     np.savetxt(output_name, ebv)
