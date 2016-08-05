@@ -89,7 +89,7 @@ def get_mlt_phys(sed_name):
 def get_physical_characteristics(sed_name, sub_dir):
     """
     Read in the name of an SED file.
-    Return (in this order) Teff, FeH, log(g)
+    Return (in this order) Teff, metallicity (FeH), log(g)
     """
     if sub_dir == 'kurucz':
         return get_kurucz_phys(sed_name)
