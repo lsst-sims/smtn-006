@@ -232,15 +232,57 @@ text files and use Matplotlib to produce plots.  The useful groups of scripts ar
   (u, g, r, i, z, y) bands.  These HEALPIX maps are outputted to text files as simple numpy
   arrays of the number of stars in each HEALPIXel.  ``stellar_density_get_arrays.py``
   queries the CatSim database and assembles the stars into HEALPIX maps of number density
-  in 0.5 magnitude bins in each of the LSST bands.  ``stellar_density_comparsions.py`` reads
-  in the text files produced by the first two scripts and, for each magnitude bin, plots
-  the number density in the input catalog next to the number density in the CatSim database.
-  Note: these will be different since, in the input catalog, not every star has every
-  magnitude measured.
+  in 0.5 magnitude bins in each of the LSST bands.
+
+  The outputs of these two scripts will look like
+  ::
+
+    # 14.50 <= i < 15.00
+    # nside 64
+    303
+    342
+    231
+    339
+    373
+    335
+    305
+
+  Each line in the file corresponds to a different HEALPIXel.  The value in each line
+  is the number of stars in that HEALPIXel (the first line is the first pixel, the
+  second line is the second pixel, etc.) Note that, because iterating over the original
+  ``.csv.gz`` files is more time-consuming than just querying the CatSim database,
+  ``stellar_density_control_arrays.py`` will produce several text files per magnitude
+  bin which ``stellar_density_comparisons.py`` will aggregate into a single map.
+
+  ``stellar_density_comparsions.py`` reads in the text files produced by the first two
+  scripts and, for each magnitude bin, plotsthe number density in the input catalog next
+  to the number density in the CatSim database. Note: these will be different since, in the
+  input catalog, not every star has every magnitude measured.
 
 * ``validate_magnitudes.py`` loops over all of the stars and compiles the number of stars
   in 0.1 magnitudes bins in both (input magnitude, magnitude residual) space as well as
   (magnitude residual, color residual) space.  These grids are outputted as text files.
+  These text files look like
+
+  ::
+
+    # input mag, fit-input mag, ct
+    2.260000e+01 -5.100000e+00 5
+    1.340000e+01 -3.800000e+00 10
+    1.340000e+01 -3.900000e+00 4
+    5.300000e+00 1.300000e+00 1
+    1.340000e+01 -3.200000e+00 46
+
+  ::
+
+    # fit-input mag, color residual, ct
+    2.060000e+01 1.920000e+01 1
+    1.150000e+01 9.600000e+00 8
+    1.150000e+01 9.500000e+00 36
+    1.150000e+01 9.400000e+00 59
+    1.150000e+01 9.300000e+00 123
+    1.150000e+01 9.200000e+00 189
+
   ``plot_magnitude_grids.py`` reads in these text files and produces density plots in both
   of those parameter spaces, as well as cumulative distributions of stars as a function of
   magnitude residual with different cuts applied to color residual.
