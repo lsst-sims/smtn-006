@@ -1,7 +1,12 @@
 """
 This script queries the CatSim database for bright stars, separates them into
 HEALPIX maps based on magnitudes, and outputs those HEALPIX maps as text files
-to be read in and plotted by another script.
+to be read in and plotted by another script.  These text files will literally
+just be a list of number representing the number of stars in each HEALPIXel
+(i.e. the first number will be the number of stars in the 1st HEALPIXel, the
+second number will be the number of stars in the 2nd HEALPIXel, etc. with the
+numbering determined by healpy's default scheme when calling ang2pix.  As of
+this writing, healpy defaults to the RING indexing scheme).
 """
 
 from __future__ import with_statement
@@ -16,6 +21,8 @@ if __name__ == "__main__":
 
     t_start = time.time()
 
+    # user-specified resolution.  Just make sure that it matches with
+    # stellar_density_comparisons.py and stellar_density_control_arrays.py
     NSIDE = 64
 
     n_pix = hp.nside2npix(NSIDE)

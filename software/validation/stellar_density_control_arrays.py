@@ -2,7 +2,12 @@
 This file reads in a list of names of the raw csv catalogs provided
 by Dave Monet, reads in those files, assembles them into HEALPIX maps
 segregated by magnitude, and outputs those maps as text files to be
-read in by another script and plotted.
+read in by another script and plotted.  These text files will literally
+just be a list of number representing the number of stars in each HEALPIXel
+(i.e. the first number will be the number of stars in the 1st HEALPIXel, the
+second number will be the number of stars in the 2nd HEALPIXel, etc. with the
+numbering determined by healpy's default scheme when calling ang2pix.  As of
+this writing, healpy defaults to the RING indexing scheme).
 """
 
 from __future__ import with_statement
@@ -31,6 +36,8 @@ if __name__ == "__main__":
 
     t_start = time.time()
 
+    # user-specified resolution.  Just make sure that it matches with
+    # stellar_density_get_arrays.py and stellar_density_comparisons.py
     NSIDE = 64
 
     n_pix = hp.nside2npix(NSIDE)

@@ -24,6 +24,8 @@ if __name__ == "__main__":
 
     t_start = time.time()
 
+    # user-specified resolution.  Just make sure that it matches with
+    # stellar_density_get_arrays.py and stellar_density_control_arrays.py
     NSIDE = 64
 
     n_bounds = 17  # number of magnitude bins
