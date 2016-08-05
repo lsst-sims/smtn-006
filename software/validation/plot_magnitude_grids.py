@@ -151,6 +151,7 @@ if __name__ == "__main__":
 
         text += '\nno cut: %.1e tot, %.1e bad' % (mag_data[name]['ct'].sum(), n_five)
 
+        # add 0.001 to avoid problems at log10(0)
         xx = np.log10(xx+0.001)
         yy = np.log10(yy)
 
@@ -173,6 +174,7 @@ if __name__ == "__main__":
             text += '\n$\sigma_c<=$ %.2f: %.1e tot, %.1e bad' % \
             (cut, mag_resid_dist[name][cut]['ct'].sum(), n_five)
 
+            # add 0.001 to avoid problems at log10(0)
             xx = np.log10(xx+0.001)
             yy = np.log10(yy)
             cut_labels[cut] = plt.plot(xx, yy, color=color)
