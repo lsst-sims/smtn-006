@@ -144,6 +144,8 @@ if __name__ == "__main__":
 
         xx, yy = get_cumulative(mag_data[name]['mag_resid'], mag_data[name]['ct'])
 
+        # Sandrine Thomas wanted to know how many stars had a magnitude
+        # residual greater than 5.  That is quantified here.
         five_dexes = np.where(np.abs(mag_data[name]['mag_resid'])>=5.0)
         n_five = mag_data[name]['ct'][five_dexes].sum()
 
