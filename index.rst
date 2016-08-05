@@ -127,7 +127,7 @@ The data columns produced by ``fit_bright_stars.cpp`` are as follows
 * flux_factor -- the multiplicative factor by which to normalize the SED to get
   observed magnitudes (degenerate with magnorm; from the fit)
 * E(B-V) -- best fit value (from the fit)
-* Teff -- effective temperature of the star (read off of SED file name)
+* Teff -- effective temperature of the star (Kelvin; read off of SED file name)
 * [Fe/H] -- metallicity of the star (read off of SED file name)
 * log(g) -- surface gravity of the star (read off of SED file name)
 * lsst_[]_noatm -- observed LSST magnitudes above the atmosphere (from the fit)
