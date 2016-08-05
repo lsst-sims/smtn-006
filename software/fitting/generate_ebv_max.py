@@ -35,6 +35,6 @@ if __name__ == "__main__":
                       ('sst', np.float), ('flag', long)])
 
     data = np.genfromtxt(input_name, dtype=dtype, delimiter=',')
-    ee = EBVbase()
+    ee = EBVbase()   # an instantiation of EBVbase from which to do calculations
     ebv = ee.calculateEbv(equatorialCoordinates=np.array([np.radians(data['ra']), np.radians(data['dec'])]))
     np.savetxt(output_name, ebv)
