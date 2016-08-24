@@ -93,6 +93,7 @@ exist to standardize that process.
 #define n_mags 35
 #define n_star_mags 16
 #define hexadec_places 8
+#define binary_places 4
 
 #define bad_val -98.0
 
@@ -198,6 +199,31 @@ long long int twos_complement(long long int ii){
 
     return remainder;
 
+}
+
+void convert_to_binary(int ii, int *output){
+    /*
+    Convert an int into an array of binary bits.  Int must be < 16
+    */
+    if(ii>=16){
+        printf("CANNOT convert %d to binary; too big\n", ii);
+        exit(1);
+    }
+
+    int denom, remainder, term;
+    int i;
+    denom=8;
+    remainder=ii;
+    for(i=binary_places-1;i>=0;i--){
+        term = remainder/denom;
+        if(term>1){
+            printf("got a binary term that is %d\n", term);
+            exit(1);
+        }
+        output[i] = term;
+        remainder = remainder - term*denom;
+        denom = denom/2;
+    }
 }
 
 
@@ -491,6 +517,40 @@ int main(int iargc, char *argv[]){
     }
     fclose(input);
 
+
+    // do some testing to make sure I converted to binary correctly
+
+    printf("testing binary\n");
+    int binary_bits[hexadec_places];
+    convert_to_binary(8, binary_bits);
+    if(binary_bits[0]!=0 || binary_bits[1]!=0 || binary_bits[2]!=0 ||
+       binary_bits[3]!=1){
+        printf("WARNING binary test got 8 wrong\n");
+        for(i=0;i<binary_places;i++){
+            printf("%d\n",binary_bits[i]);
+        }
+        exit(1);
+    }
+
+    convert_to_binary(12, binary_bits);
+    if(binary_bits[0]!=0 || binary_bits[1]!=0 || binary_bits[2]!=1 ||
+       binary_bits[3]!=1){
+        printf("WARNING binary test got 12 wrong\n");
+        for(i=0;i<binary_places;i++){
+            printf("%d\n",binary_bits[i]);
+        }
+        exit(1);
+    }
+
+    convert_to_binary(7, binary_bits);
+    if(binary_bits[0]!=1 || binary_bits[1]!=1 || binary_bits[2]!=1 ||
+       binary_bits[3]!=0){
+        printf("WARNING binary test got 7 wrong\n");
+        for(i=0;i<binary_places;i++){
+            printf("%d\n",binary_bits[i]);
+        }
+        exit(1);
+    }
 
     // do some testing to make sure I converted
     // base 10 to base 16 properly
