@@ -786,10 +786,6 @@ int main(int iargc, char *argv[]){
     double err;
     int ct;
 
-    // sfd control
-    //FILE *control;
-    //char control_name[2*letters];
-
     char buffer_name[2*letters];
 
     // construct a mapping so we can associate our SED, E(B-V) grid to
@@ -855,10 +851,6 @@ int main(int iargc, char *argv[]){
         }
 
         sprintf(output_name,"%s/%s_ebv_grid_fit.txt", output_dir, highest_name);
-
-        // sfd control
-        //sprintf(control_name,"%s_control.txt", input_files[i_file]);
-        //control=fopen(control_name,"w");
 
         output=fopen(output_name, "w");
 
@@ -934,26 +926,9 @@ int main(int iargc, char *argv[]){
             fprintf(output,"%le %s ",err,highest_name);
             fprintf(output,"%d\n",n_colors);
 
-            // sfd control
-            //convert_to_hexadecimal(flag, hexadec_bits);
-            //fprintf(control,"%lld %le ",star_id, err);
-            //if(hexadec_bits[4]==0 || hexadec_bits[4]==1 || hexadec_bits[4]==11){
-            //    fprintf(control,"PanStarrs ");
-            //}
-            //else{
-            //    fprintf(control,"SDSS ");
-            //}
-            //fprintf(control,"%le %le %le %le %le\n",
-            //star_mags[_star_u_dex], star_mags[_star_g_dex],
-            //star_mags[_star_r_dex], star_mags[_star_i_dex],
-            //star_mags[_star_z_dex]);
-
         }
         fclose(input);
         fclose(output);
-
-        // sfd control
-        //fclose(control);
 
         sprintf(cmd,"gzip -f %s",output_name);
         system(cmd);
