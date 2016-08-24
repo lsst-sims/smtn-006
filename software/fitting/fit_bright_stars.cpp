@@ -266,10 +266,20 @@ void convert_to_hexadecimal(long long int ii, int *output){
 }
 
 
-void get_mag_map(long long int flag, int *map_out){
+void get_mag_map(long long int flag, int *map_out, int *flag_out){
     int hexadec_bits[hexadec_places];
 
     convert_to_hexadecimal(flag, hexadec_bits);
+
+    int i,j,k;
+    int binary_bits[binary_places];
+    for(i=0,j=0;i<hexadec_places;i++){
+        convert_to_binary(hexadec_bits[i],binary_bits);
+        for(k=0;k<binary_places;k++,j++){
+            flag_out[j]=binary_bits[k];
+        }
+    }
+
     int psrc=hexadec_bits[4];
 
     //default (sdss)
@@ -803,6 +813,7 @@ int main(int iargc, char *argv[]){
     double t_start = double(time(NULL));
     int total_ct=0;
     int n_colors;
+    int monet_bits[hexadec_places*binary_places];
     char highest_name[letters];
     // Loop over the csv files, performing the fits of all stars in those files
     for(i_file=0;i_file<n_input_files;i_file++){
@@ -880,7 +891,7 @@ int main(int iargc, char *argv[]){
             fscanf(input,"%lld",&flag);
 
             // map the star's magnitudes onto the SED magnitudes
-            get_mag_map(flag, mag_map);
+            get_mag_map(flag, mag_map, monet_bits);
 
             // make sure that ebv_max fits in the grid of ebv we have input
             if(ebv_max[i_line]>ebv_min){
@@ -911,8 +922,6 @@ int main(int iargc, char *argv[]){
             fprintf(output,"%s %le %le %le ",
             sed_names[i_chosen],raw_magnorm[raw_dex]+offset,flux_factor,ebv_data[i_chosen]);
 
-            fprintf(output,"%le %le %le ",teff[raw_dex], metallicity[raw_dex], logg[raw_dex]);
-
             fprintf(output,"%le %le %le %le %le %le ",
             sed_data[i_chosen*n_mags+_lsst_u_dex]+offset,sed_data[i_chosen*n_mags+_lsst_g_dex]+offset,
             sed_data[i_chosen*n_mags+_lsst_r_dex]+offset,sed_data[i_chosen*n_mags+_lsst_i_dex]+offset,
@@ -923,17 +932,13 @@ int main(int iargc, char *argv[]){
             sed_data[i_chosen*n_mags+_lsst_r_atm_dex]+offset,sed_data[i_chosen*n_mags+_lsst_i_atm_dex]+offset,
             sed_data[i_chosen*n_mags+_lsst_z_atm_dex]+offset,sed_data[i_chosen*n_mags+_lsst_y_atm_dex]+offset);
 
-            fprintf(output,"%le %le %le %le %le ",
-            sed_data[i_chosen*n_mags+_sdss_u_dex]+offset,sed_data[i_chosen*n_mags+_sdss_g_dex]+offset,
-            sed_data[i_chosen*n_mags+_sdss_r_dex]+offset,sed_data[i_chosen*n_mags+_sdss_i_dex]+offset,
-            sed_data[i_chosen*n_mags+_sdss_z_dex]+offset);
-
-            fprintf(output,"%le %le %le %le %le ",
-            raw_sdss_mags[raw_dex][0]+offset, raw_sdss_mags[raw_dex][1]+offset,
-            raw_sdss_mags[raw_dex][2]+offset, raw_sdss_mags[raw_dex][3]+offset,
-            raw_sdss_mags[raw_dex][4]+offset);
-
-            fprintf(output,"%le %s",err,highest_name);
+            for(i=0;i<n_star_mags;i++){
+                fprintf(output,"%le ",star_mags[i]);
+            }
+            for(i=0;i<hexadec_places*binary_places;i++){
+                fprintf(output,"%d ",monet_bits[i]);
+            }
+            fprintf(output,"%le %s ",err,highest_name);
             fprintf(output,"\n");
 
             // sfd control
