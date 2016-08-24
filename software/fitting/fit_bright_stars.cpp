@@ -96,6 +96,7 @@ exist to standardize that process.
 #define binary_places 4
 
 #define bad_mag -98.0
+#define max_mag 23.0
 
 int n_sed;
 char **sed_names;
@@ -310,7 +311,7 @@ void get_mag_map(long long int flag, int *map_out){
 }
 
 
-int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_max, double *best_offset, double *err_out){
+int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_max, double *best_offset, double *err_out, int *n_valid_out){
     /*
     Read in a an array of mapped star mags.
     Return the row index of the best-fitting SED, e(b-v) combination
@@ -323,19 +324,13 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
 
     int n_valid=0;
     for(ii=0;ii<n_star_mags-1;ii++){
-        if(star_mags[ii]>bad_mag){
+        if(star_mags[ii]>bad_mag && star_mags[ii]<=max_mag){
+            valid_dex[n_valid]=ii;
             n_valid++;
         }
     }
 
-
-    j=0;
-    for(ii=0;ii<n_star_mags-1;ii++){
-        if(star_mags[ii]>bad_mag){
-            valid_dex[j]=ii;
-            j++;
-        }
-    }
+    n_valid_out[0]=n_valid-1;
 
     double n_good=double(n_valid);
     double sed_color;
@@ -807,6 +802,7 @@ int main(int iargc, char *argv[]){
     int n_ebv_max,i_line;
     double t_start = double(time(NULL));
     int total_ct=0;
+    int n_colors;
     char highest_name[letters];
     // Loop over the csv files, performing the fits of all stars in those files
     for(i_file=0;i_file<n_input_files;i_file++){
@@ -895,7 +891,7 @@ int main(int iargc, char *argv[]){
             }
 
             // choose the SED, E(B-V) pair that best matches the star's colors
-            i_chosen=fit_star_mags(star_mags, mag_map, ebv_data, ebv_max_scalar, &offset, &err);
+            i_chosen=fit_star_mags(star_mags, mag_map, ebv_data, ebv_max_scalar, &offset, &err, &n_colors);
 
             raw_dex=sed_to_raw_map[i_chosen];
 
