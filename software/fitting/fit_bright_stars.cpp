@@ -932,7 +932,7 @@ int main(int iargc, char *argv[]){
                 fprintf(output,"%d ",monet_bits[i]);
             }
             fprintf(output,"%le %s ",err,highest_name);
-            fprintf(output,"\n");
+            fprintf(output,"%d\n",n_colors);
 
             // sfd control
             //convert_to_hexadecimal(flag, hexadec_bits);
