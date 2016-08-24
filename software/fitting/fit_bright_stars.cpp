@@ -342,6 +342,12 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
 
     n_valid_out[0]=n_valid-1;
 
+    if(n_valid_out[0] == 0){
+        best_offset[0]=10.0;
+        err_out[0]=100.0;
+        return 0;
+    }
+
     double n_good=double(n_valid);
     double sed_color;
 
