@@ -901,7 +901,7 @@ int main(int iargc, char *argv[]){
 
             lonLatFromRaDec(ra, dec, &lon, &lat);
 
-            fprintf(output,"0 %lld %.12le %.12le %.12le %.12le %.12le %.12le ",
+            fprintf(output,"%lld %.12le %.12le %.12le %.12le %.12le %.12le ",
             star_id, ra, dec, mura*1000.0, mudec*1000.0, lon, lat);
 
             fprintf(output,"%s %le %le %le ",
