@@ -137,7 +137,7 @@ long long int twos_complement(long long int ii){
 
     int *binary;
     binary=new int[4*hexadec_places];
-    int binary_places=4*hexadec_places;
+    int local_binary_places=4*hexadec_places;
     long long int remainder=ii*(-1);
     long long int local_term;
     long long int denom;
@@ -145,10 +145,10 @@ long long int twos_complement(long long int ii){
     int val;
     int i;
     local_term=1;
-    for(i=0;i<binary_places;i++){
+    for(i=0;i<local_binary_places;i++){
         local_term*=2;
     }
-    for(dex=binary_places-1;dex>=0;dex--){
+    for(dex=local_binary_places-1;dex>=0;dex--){
         local_term/=2;
         val=remainder/local_term;
         if(val>1){
@@ -160,7 +160,7 @@ long long int twos_complement(long long int ii){
     }
 
 
-    for(i=0;i<binary_places;i++){
+    for(i=0;i<local_binary_places;i++){
         if(binary[i]==1){
             binary[i]=0;
         }
@@ -174,7 +174,7 @@ long long int twos_complement(long long int ii){
     }
     else{
        binary[0]=0;
-       for(i=1;i<binary_places;i++){
+       for(i=1;i<local_binary_places;i++){
            if(binary[i]==1){
                binary[i]=0;
            }
@@ -187,7 +187,7 @@ long long int twos_complement(long long int ii){
 
     remainder=0;
     local_term=1;
-    for(dex=0;dex<binary_places;dex++){
+    for(dex=0;dex<local_binary_places;dex++){
         if(dex>0){
             local_term*=2;
         }
