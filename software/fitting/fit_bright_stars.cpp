@@ -381,7 +381,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     }
     best_offset[0]=best_offset[0]/n_good;
 
-    err_out[0]=sqrt(err_best)/(n_valid-1);
+    err_out[0]=sqrt(err_best/(n_valid-1));
 
     return dex_best;
 
