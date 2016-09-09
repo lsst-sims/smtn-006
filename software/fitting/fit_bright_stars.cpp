@@ -95,7 +95,7 @@ exist to standardize that process.
 #define hexadec_places 8
 #define binary_places 4
 
-#define bad_mag -98.0
+#define min_mag 5.0
 #define max_mag 23.0
 
 int n_sed;
@@ -334,7 +334,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
 
     int n_valid=0;
     for(ii=0;ii<n_star_mags-1;ii++){
-        if(star_mags[ii]>bad_mag && star_mags[ii]<=max_mag){
+        if(star_mags[ii]>min_mag && star_mags[ii]<=max_mag){
             valid_dex[n_valid]=ii;
             n_valid++;
         }
