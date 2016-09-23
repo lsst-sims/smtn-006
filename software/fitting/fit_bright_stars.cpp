@@ -873,6 +873,10 @@ int main(int iargc, char *argv[]){
             }
             total_ct++;
             ct++;
+            if(total_ct%1000==0){
+                printf("did %d in %e hours\n",total_ct,
+                (double(time(NULL))-t_start)/3600.0);
+            }
             fscanf(input,"%le %le %le %le\n",
             &ra, &dec, &mura, &mudec);
 
