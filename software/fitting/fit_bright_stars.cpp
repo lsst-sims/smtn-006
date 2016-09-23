@@ -95,7 +95,7 @@ exist to standardize that process.
 #define hexadec_places 8
 #define binary_places 4
 
-#define min_mag 0.0
+#define min_mag -98.0
 #define max_mag 23.0
 
 int n_sed;
