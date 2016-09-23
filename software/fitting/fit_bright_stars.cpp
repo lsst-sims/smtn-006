@@ -75,20 +75,30 @@ exist to standardize that process.
 */
 #define _star_B_dex 0
 #define _star_V_dex 1
+
 #define _star_u_dex 2
 #define _star_g_dex 3
 #define _star_r_dex 4
 #define _star_i_dex 5
 #define _star_z_dex 6
 #define _star_y_dex 7
+
 #define _star_J_dex 8
 #define _star_H_dex 9
 #define _star_K_dex 10
+
 #define _star_w1_dex 11
 #define _star_w2_dex 12
 #define _star_w3_dex 13
 #define _star_w4_dex 14
+
 #define _star_sst_dex 15
+
+#define _n_allowed_colors 11
+
+int _allowed_colors_bp1[_n_allowed_colors]={0,2,3,4,5,6,8,9,11,12,13};
+double _color_min[_n_allowed_colors]={-3.0,-0.5,-0.53,-0.8,-0.32,-0.23,-1.7,-3.1,-1.03,-2.4,-1.5};
+double _color_max[_n_allowed_colors]={13.3,21.0,13.5,8.3,8.2,4.6,4.3,2.6,3.1,1.0,-0.18};
 
 #define n_mags 35
 #define n_star_mags 16
@@ -102,8 +112,9 @@ int n_sed;
 char **sed_names;
 double *sed_data,*teff,*metallicity,*ebv_data,*logg;
 
-int valid_dex[n_mags];
-double star_color[n_mags];
+int valid_color_dex[_n_allowed_colors];
+int valid_mag_dex[n_star_mags];
+double star_color[_n_allowed_colors];
 
 double power(double aa, int ee){
      double out=1.0;
@@ -328,31 +339,65 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     */
 
 
-    int ii,j;
+    int ii,j,k;
     int dex_best=-1;
     double err,err_best=1000000.0;
 
-    int n_valid=0;
-    for(ii=0;ii<n_star_mags-1;ii++){
-        if(star_mags[ii]>min_mag && star_mags[ii]<=max_mag){
-            valid_dex[n_valid]=ii;
-            n_valid++;
+    int n_valid_colors=0;
+    int n_valid_mags=0;
+    int ibp1,ibp2,append;
+    double color;
+    for(ii=0;ii<_n_allowed_colors;ii++){
+        ibp1=_allowed_colors_bp1[ii];
+        ibp2=ibp1+1;
+        if(star_mags[ibp1]>min_mag && star_mags[ibp1]<=max_mag){
+            if(star_mags[ibp2]>min_mag && star_mags[ibp2]<=max_mag){
+                color=star_mags[ibp1]-star_mags[ibp2];
+                if(color>=_color_min[ii] && color<=_color_max[ii]){
+                    valid_color_dex[n_valid_colors]=ii;
+                    n_valid_colors++;
+                    append=1;
+                    for(k=0;k<n_valid_mags;k++){
+                        if(valid_mag_dex[k]==ibp1){
+                            append=0;
+                            break;
+                        }
+                    }
+                    if(append==1){
+                        valid_mag_dex[n_valid_mags]=ibp1;
+                        n_valid_mags++;
+                    }
+                    append=1;
+                    for(k=0;k<n_valid_mags;k++){
+                        if(valid_mag_dex[k]==ibp2){
+                            append=0;
+                            break;
+                        }
+                    }
+                    if(append==1){
+                        valid_mag_dex[n_valid_mags]=ibp2;
+                        n_valid_mags++;
+                    }
+                }
+            }
         }
     }
 
-    n_valid_out[0]=n_valid-1;
+    n_valid_out[0]=n_valid_colors;
 
-    if(n_valid_out[0] <= 0){
+    if(n_valid_out[0] <= 1){
         best_offset[0]=10.0;
         err_out[0]=100.0;
         return 0;
     }
 
-    double n_good=double(n_valid);
+    double n_good=double(n_valid_colors);
     double sed_color;
 
-    for(j=0;j<n_valid-1;j++){
-        star_color[j]=star_mags[valid_dex[j]]-star_mags[valid_dex[j+1]];
+    for(j=0;j<n_valid_colors;j++){
+        ibp1=_allowed_colors_bp1[valid_color_dex[j]];
+        ibp2=ibp1+1;
+        star_color[j]=star_mags[ibp1]-star_mags[ibp2];
     }
 
     for(ii=0;ii<n_sed;ii++){
@@ -360,8 +405,11 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
 
             err=0.0;
 
-            for(j=0;j<n_valid-1;j++){
-                sed_color=sed_data[ii*n_mags+mag_map[valid_dex[j]]]-sed_data[ii*n_mags+mag_map[valid_dex[j+1]]];
+            for(j=0;j<n_valid_colors;j++){
+                ibp1=_allowed_colors_bp1[valid_color_dex[j]];
+                ibp2=ibp1+1;
+
+                sed_color=sed_data[ii*n_mags+mag_map[ibp1]]-sed_data[ii*n_mags+mag_map[ibp2]];
                 err+=(sed_color-star_color[j])*(sed_color-star_color[j]);
                 if(dex_best>=0 && err>err_best){
                     break;
@@ -375,13 +423,14 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
         }
     }
 
+
     best_offset[0]=0.0;
-    for(j=0;j<n_valid;j++){
-        best_offset[0]+=(star_mags[valid_dex[j]]-sed_data[dex_best*n_mags+mag_map[valid_dex[j]]]);
+    for(j=0;j<n_valid_mags;j++){
+        best_offset[0]+=(star_mags[valid_mag_dex[j]]-sed_data[dex_best*n_mags+mag_map[valid_mag_dex[j]]]);
     }
     best_offset[0]=best_offset[0]/n_good;
 
-    err_out[0]=sqrt(err_best/(n_valid-1));
+    err_out[0]=sqrt(err_best/(n_valid_colors));
 
     return dex_best;
 
