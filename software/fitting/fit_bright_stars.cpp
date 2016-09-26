@@ -401,7 +401,6 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
         return 0;
     }
 
-    double n_good=double(n_valid_colors);
     double sed_color;
 
     for(j=0;j<n_valid_colors;j++){
@@ -454,7 +453,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     for(j=0;j<n_valid_mags;j++){
         best_offset[0]+=(star_mags[valid_mag_dex[j]]-sed_data[dex_best*n_mags+mag_map[valid_mag_dex[j]]]);
     }
-    best_offset[0]=best_offset[0]/n_good;
+    best_offset[0]=best_offset[0]/double(n_valid_mags);
 
     err_out[0]=sqrt(err_best/(n_valid_colors));
 
