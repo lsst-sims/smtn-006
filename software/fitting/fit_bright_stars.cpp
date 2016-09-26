@@ -108,8 +108,17 @@ double _color_max[_n_allowed_colors]={13.3,21.0,13.5,8.3,8.2,4.6,4.3,2.6,3.1,1.0
 #define min_mag -98.0
 #define max_mag 23.0
 
+#define KURUCZ 1
+#define MLT 2
+#define WD 3
+
+#define LOG_P_KURUCZ -0.51
+#define LOG_P_MLT -1.6
+#define LOG_P_WD -1.6
+
 int n_sed;
 char **sed_names;
+int *sed_type;
 double *sed_data,*teff,*metallicity,*ebv_data,*logg;
 
 int valid_color_dex[_n_allowed_colors];
@@ -341,7 +350,8 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
 
     int ii,j,k;
     int dex_best=-1;
-    double err,err_best=1000000.0;
+    double err,err_best;
+    double err_and_prior_best=1000000.0;
 
     int n_valid_colors=0;
     int n_valid_mags=0;
@@ -400,7 +410,22 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
         star_color[j]=star_mags[ibp1]-star_mags[ibp2];
     }
 
+    double prior_arr[4];
+    double prior;
+    prior_arr[KURUCZ]= -2.0*n_valid_colors*LOG_P_KURUCZ;
+    prior_arr[MLT] = -2.0*n_valid_colors*LOG_P_MLT;
+    prior_arr[WD] = -2.0*n_valid_colors*LOG_P_WD;
+
     for(ii=0;ii<n_sed;ii++){
+        if(sed_type[ii]==KURUCZ){
+            prior=prior_arr[KURUCZ];
+        }
+        else if(sed_type[ii]==MLT){
+            prior=prior_arr[MLT];
+        }
+        else if(sed_type[ii]==WD){
+            prior=prior_arr[WD];
+        }
         if(ebv_grid[ii]<=ebv_max){
 
             err=0.0;
@@ -411,14 +436,15 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
 
                 sed_color=sed_data[ii*n_mags+mag_map[ibp1]]-sed_data[ii*n_mags+mag_map[ibp2]];
                 err+=(sed_color-star_color[j])*(sed_color-star_color[j]);
-                if(dex_best>=0 && err>err_best){
+                if(dex_best>=0 && err+prior>err_and_prior_best){
                     break;
                 }
             }
 
-            if(ii==0 || err<err_best){
+            if(ii==0 || err+prior<err_and_prior_best){
                 dex_best=ii;
                 err_best=err;
+                err_and_prior_best=err+prior;
              }
         }
     }
@@ -750,6 +776,7 @@ int main(int iargc, char *argv[]){
     printf("n_sed %d\n",n_sed);
 
     sed_names=new char*[n_sed];
+    sed_type=new int[n_sed];
     sed_data=new double[n_sed*n_mags];
     ebv_data=new double[n_sed];
     double ebv_min=100.0;
@@ -766,6 +793,19 @@ int main(int iargc, char *argv[]){
     }
     for(i=0;i<n_sed;i++){
         fscanf(input,"%s",sed_names[i]);
+        if(sed_names[i][0]=='k'){
+            sed_type[i]=KURUCZ;
+        }
+        else if(sed_names[i][0]=='l'){
+            sed_type[i]=MLT;
+        }
+        else if(sed_names[i][0]=='b'){
+            sed_type[i]=WD;
+        }
+        else{
+           printf("Do not know type for %s\n",sed_names[i]);
+           exit(1);
+        }
         fscanf(input,"%le",&ebv_data[i]);
         if(ebv_data[i]<ebv_min){
             ebv_min=ebv_data[i];
