@@ -444,26 +444,11 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     double err,err_best;
     double err_and_prior_best=1000000.0;
 
-    double radius,norm,xx;
-    int is_possible;
+    int i_unq_chosen;
+    int ebv_step;
+    ebv_step=3;
 
     for(i_unq=0;i_unq<_n_unq_sed;i_unq++){
-
-        radius=-1.0;
-        for(j=0;j<_n_allowed_colors;j++){
-            k=i_unq*_n_allowed_colors+j;
-            norm=0.5*(_unq_color_max[k]-_unq_color_min[k]);
-            if(norm>radius){
-                radius=norm;
-            }
-        }
-        radius=power(radius,2);
-
-        norm=0.0;
-        for(j=0;j<n_valid_colors;j++){
-            xx=_star_color[j]-_unq_color[i_unq*_n_allowed_colors+_valid_color_dex[j]];
-            norm+=power(xx,2);
-        }
 
         ii=_unq_map[i_unq*_n_ebv];
         if(_sed_type[ii]==KURUCZ){
@@ -476,16 +461,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
             prior=prior_arr[WD];
         }
 
-        is_possible=1;
-        if(norm/radius>1.0 && power(sqrt(norm)-sqrt(radius),2)+prior>err_and_prior_best){
-            is_possible=0;
-        }
-
-        if(dex_best>=0 && is_possible==0){
-            continue;
-        }
-
-        for(i_ebv=0;i_ebv<_n_ebv;i_ebv++){
+        for(i_ebv=0;i_ebv<_n_ebv;i_ebv+=ebv_step){
             ii=_unq_map[i_unq*_n_ebv+i_ebv];
 
             if(ebv_grid[ii]<=ebv_max){
@@ -507,8 +483,48 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
                     dex_best=ii;
                     err_best=err;
                     err_and_prior_best=err+prior;
+                    i_unq_chosen=i_unq;
                  }
             }
+        }
+    }
+
+    dex_best=-1;
+    i_unq=i_unq_chosen;
+    ii=_unq_map[i_unq*_n_ebv];
+    if(_sed_type[ii]==KURUCZ){
+        prior=prior_arr[KURUCZ];
+    }
+    else if(_sed_type[ii]==MLT){
+        prior=prior_arr[MLT];
+    }
+    else if(_sed_type[ii]==WD){
+        prior=prior_arr[WD];
+    }
+
+    for(i_ebv=0;i_ebv<_n_ebv;i_ebv++){
+        ii=_unq_map[i_unq*_n_ebv+i_ebv];
+
+        if(ebv_grid[ii]<=ebv_max){
+
+            err=0.0;
+
+            for(j=0;j<n_valid_colors;j++){
+                ibp1=_allowed_colors_bp1[_valid_color_dex[j]];
+                ibp2=ibp1+1;
+
+                sed_color=_sed_data[ii*n_mags+mag_map[ibp1]]-_sed_data[ii*n_mags+mag_map[ibp2]];
+                err+=(sed_color-_star_color[j])*(sed_color-_star_color[j]);
+                if(dex_best>=0 && err+prior>err_and_prior_best){
+                    break;
+                }
+            }
+
+            if(dex_best<0 || err+prior<err_and_prior_best){
+                dex_best=ii;
+                err_best=err;
+                err_and_prior_best=err+prior;
+             }
         }
     }
 
