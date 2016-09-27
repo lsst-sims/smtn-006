@@ -487,7 +487,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     int *i_unq_list;
     double *unq_best_err;
     int ebv_step;
-    ebv_step=3;
+    ebv_step=5;
 
     double t_start;
 
@@ -543,7 +543,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     double err_best;
     double err_and_prior_best=1000000.0;
 
-    int top_n=100;
+    int top_n=300;
     t_start=double(time(NULL));
     get_top_n(unq_best_err, i_unq_list, _n_unq_sed, top_n);
     _t_sort+=double(time(NULL))-t_start;
