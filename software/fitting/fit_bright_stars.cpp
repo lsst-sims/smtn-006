@@ -407,6 +407,8 @@ void get_mag_map(long long int flag, int *map_out, int *flag_out){
 }
 
 double _t_sort=0.0;
+double _t_prelim=0.0;
+double _t_final=0.0;
 
 int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_max, double *best_offset, double *err_out, int *n_valid_out){
     /*
@@ -487,6 +489,8 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     int ebv_step;
     ebv_step=3;
 
+    double t_start;
+
     i_unq_list = new int[_n_unq_sed];
     unq_best_err = new double[_n_unq_sed];
     for(j=0;j<_n_unq_sed;j++){
@@ -494,6 +498,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
         i_unq_list[j]=j;
     }
 
+    t_start=double(time(NULL));
     for(i_unq=0;i_unq<_n_unq_sed;i_unq++){
 
         ii=_unq_map[i_unq*_n_ebv];
@@ -532,12 +537,14 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
         }
     }
 
+    _t_prelim+=double(time(NULL))-t_start;
+
     int dex_best=-1;
     double err_best;
     double err_and_prior_best=1000000.0;
 
     int top_n=100;
-    double t_start=double(time(NULL));
+    t_start=double(time(NULL));
     get_top_n(unq_best_err, i_unq_list, _n_unq_sed, top_n);
     _t_sort+=double(time(NULL))-t_start;
 
@@ -545,6 +552,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
 
     dex_best=-1;
 
+    t_start=double(time(NULL));
     for(i_list=0;i_list<top_n;i_list++){
         i_unq=i_unq_list[i_list];
         ii=_unq_map[i_unq*_n_ebv];
@@ -584,6 +592,8 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
             }
         }
     }
+
+    _t_final+=double(time(NULL))-t_start;
 
     best_offset[0]=0.0;
     for(j=0;j<n_valid_mags;j++){
@@ -1295,6 +1305,8 @@ int main(int iargc, char *argv[]){
 
     printf("that took %e to do %d\n",double(time(NULL))-t_start,total_ct);
     printf("sorting took %e\n",_t_sort);
+    printf("prelim took %e\n",_t_prelim);
+    printf("final took %e\n",_t_final);
 
 }
 
