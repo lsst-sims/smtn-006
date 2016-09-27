@@ -446,13 +446,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
                 printf("WARNING valid color dex is bad\n");
                 exit(1);
             }
-            mean_color_dist+=power((_unq_color[i_unq*_n_allowed_colors+_valid_color_dex[j]]-_star_color[j])/
-                                   (_unq_color_max[i_unq*_n_allowed_colors+_valid_color_dex[j]]-
-                                     _unq_color_min[i_unq*_n_allowed_colors+_valid_color_dex[j]]),2);
-        }
-        mean_color_dist=sqrt(mean_color_dist);
-        if(mean_color_dist>1.0){
-            continue;
+            mean_color_dist+=power((_unq_color[i_unq*_n_allowed_colors+_valid_color_dex[j]]-_star_color[j]),2);
         }
 
         ii=_unq_map[i_unq*_n_ebv];
@@ -464,6 +458,10 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
         }
         else if(_sed_type[ii]==WD){
             prior=prior_arr[WD];
+        }
+
+        if(dex_best>=0 && mean_color_dist+prior>err_and_prior_best){
+            continue;
         }
 
         for(i_ebv=0;i_ebv<_n_ebv;i_ebv++){
@@ -491,10 +489,6 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
                  }
             }
         }
-    }
-
-    if(dex_best<0){
-        printf("WARNING dex best %d\n",dex_best);
     }
 
     best_offset[0]=0.0;
