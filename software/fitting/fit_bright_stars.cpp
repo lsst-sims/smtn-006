@@ -443,15 +443,9 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     int dex_best=-1;
     double err,err_best;
     double err_and_prior_best=1000000.0;
-    double mean_color_dist;
 
-    double *trial,*direction;
-    double radius,norm;
-    trial=NULL;
-    direction=NULL;
-
-    trial=new double[n_valid_colors];
-    direction=new double[n_valid_colors];
+    double radius,norm,xx;
+    int is_possible;
 
     for(i_unq=0;i_unq<_n_unq_sed;i_unq++){
 
@@ -463,28 +457,12 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
                 radius=norm;
             }
         }
+        radius=power(radius,2);
 
         norm=0.0;
         for(j=0;j<n_valid_colors;j++){
-            direction[j]=_star_color[j]-_unq_color[i_unq*_n_allowed_colors+_valid_color_dex[j]];
-            norm+=power(direction[j],2);
-        }
-        norm=sqrt(norm);
-        for(j=0;j<n_valid_colors;j++){
-            direction[j]=direction[j]/norm;
-        }
-
-        for(j=0;j<n_valid_colors;j++){
-             trial[j]=_unq_color[i_unq*_n_allowed_colors+_valid_color_dex[j]]+direction[j]*radius;
-        }
-
-        mean_color_dist=0.0;
-        for(j=0;j<n_valid_colors;j++){
-            if(_valid_color_dex[j]>=_n_allowed_colors){
-                printf("WARNING valid color dex is bad\n");
-                exit(1);
-            }
-            mean_color_dist+=power((trial[j]-_star_color[j]),2);
+            xx=_star_color[j]-_unq_color[i_unq*_n_allowed_colors+_valid_color_dex[j]];
+            norm+=power(xx,2);
         }
 
         ii=_unq_map[i_unq*_n_ebv];
@@ -498,7 +476,12 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
             prior=prior_arr[WD];
         }
 
-        if(dex_best>=0 && mean_color_dist+prior>err_and_prior_best){
+        is_possible=1;
+        if(norm/radius>1.0 && power(sqrt(norm)-sqrt(radius),2)+prior>err_and_prior_best){
+            is_possible=0;
+        }
+
+        if(dex_best>=0 && is_possible==0){
             continue;
         }
 
@@ -536,9 +519,6 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     best_offset[0]=best_offset[0]/double(n_valid_mags);
 
     err_out[0]=sqrt(err_best/(n_valid_colors));
-
-    if(trial!=NULL) delete [] trial;
-    if(direction!=NULL) delete [] direction;
 
     return dex_best;
 
