@@ -142,6 +142,110 @@ double power(double aa, int ee){
      return out;
 }
 
+//the routines below are just the merge sort routine from Numerical Recipes;
+
+int scanner(double *m, int *indices, int index, int el){
+/*this will take the matrix m and put everything in it with value
+greater than element m[index] to the right of that element
+and everything less than m[index] to the left; it then returns
+the new index of that anchored element (which you now *know* is in
+the right spot*/
+
+        double toobig,toosmall;
+        int i,j,n,k,pp;
+        int itoobig,itoosmall;
+        FILE *output;
+
+        itoobig=0;
+        itoosmall=0;
+        for(i=0;i<el;i++){
+          if(m[i]<=m[index])itoosmall++;
+
+        }
+
+        toobig=m[index];
+        itoobig=indices[index];
+
+        indices[index]=indices[itoosmall-1];
+        m[index]=m[itoosmall-1];
+
+        index=itoosmall-1;
+        m[index]=toobig;
+        indices[index]=itoobig;
+
+        i=0;
+        j=el-1;
+        n=0;
+        pp=1;
+        while(index<el-1 && n<el-1){
+         for(;m[i]<=m[index] && i<index;i++,n++);
+         itoobig=indices[i];
+         toobig=m[i];
+
+         for(;m[j]>m[index] && j>index;j--,n++){
+
+         }
+         itoosmall=indices[j];
+         toosmall=m[j];
+
+
+
+         if(toosmall<toobig){
+
+         //in case it ran to the end and i found m[index]
+          m[i]=toosmall;
+          indices[i]=itoosmall;
+
+          m[j]=toobig;
+          indices[j]=itoobig;
+         }
+
+        }
+
+        return index;
+}
+
+void sort(double *m, int *indices, int el){
+        double *newm,junk;
+        int k,i,*newi,ii,diff;
+
+        if(el==2){
+         if(m[0]>m[1]){
+
+           junk=m[1];
+           m[1]=m[0];
+           m[0]=junk;
+
+           k=indices[1];
+           indices[1]=indices[0];
+           indices[0]=k;
+
+         }
+        }
+        else if(el>2){
+
+        diff=0; //just in case all elements are identical
+        for(ii=1;ii<el;ii++)if(m[ii]!=m[0])diff=1;
+
+        if(diff==1){
+
+           i=scanner(m,indices,el/2,el);
+
+           if(i+1<el){
+             newm=&m[i+1];
+            sort(m,indices,i+1);
+             newi=&indices[i+1];
+            sort(newm,newi,el-i-1);
+          }
+          else{
+            sort(m,indices,el-1);
+          }
+
+         }
+
+        }
+}
+
 int char_same(char *w1, char *w2){
     int i;
     for(i=0;w1[i]!=0 && w2[i]!=0;i++){
@@ -365,6 +469,7 @@ void get_mag_map(long long int flag, int *map_out, int *flag_out){
 
 }
 
+double _t_sort=0.0;
 
 int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_max, double *best_offset, double *err_out, int *n_valid_out){
     /*
@@ -432,7 +537,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     }
 
     double prior_arr[4];
-    double prior;
+    double prior,err;
     prior_arr[KURUCZ]= -2.0*n_valid_colors*LOG_P_KURUCZ;
     prior_arr[MLT] = -2.0*n_valid_colors*LOG_P_MLT;
     prior_arr[WD] = -2.0*n_valid_colors*LOG_P_WD;
@@ -440,13 +545,17 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     int i_unq;
     int i_ebv;
 
-    int dex_best=-1;
-    double err,err_best;
-    double err_and_prior_best=1000000.0;
-
-    int i_unq_chosen;
+    int *i_unq_list;
+    double *unq_best_err;
     int ebv_step;
-    ebv_step=3;
+    ebv_step=10;
+
+    i_unq_list = new int[_n_unq_sed];
+    unq_best_err = new double[_n_unq_sed];
+    for(j=0;j<_n_unq_sed;j++){
+        unq_best_err[j]=10000000.0;
+        i_unq_list[j]=j;
+    }
 
     for(i_unq=0;i_unq<_n_unq_sed;i_unq++){
 
@@ -474,6 +583,56 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
 
                     sed_color=_sed_data[ii*n_mags+mag_map[ibp1]]-_sed_data[ii*n_mags+mag_map[ibp2]];
                     err+=(sed_color-_star_color[j])*(sed_color-_star_color[j]);
+                    if(err+prior>unq_best_err[i_unq]){
+                        break;
+                    }
+                }
+
+                if(err+prior<unq_best_err[i_unq]){
+                    unq_best_err[i_unq]=err+prior;
+                 }
+            }
+        }
+    }
+
+    int dex_best=-1;
+    double err_best;
+    double err_and_prior_best=1000000.0;
+
+    double t_start=double(time(NULL));
+    sort(unq_best_err, i_unq_list, _n_unq_sed);
+    _t_sort+=double(time(NULL))-t_start;
+
+    int i_list;
+
+    dex_best=-1;
+
+    for(i_list=0;i_list<100;i_list++){
+        i_unq=i_unq_list[i_list];
+        ii=_unq_map[i_unq*_n_ebv];
+        if(_sed_type[ii]==KURUCZ){
+            prior=prior_arr[KURUCZ];
+        }
+        else if(_sed_type[ii]==MLT){
+            prior=prior_arr[MLT];
+        }
+        else if(_sed_type[ii]==WD){
+            prior=prior_arr[WD];
+        }
+
+        for(i_ebv=0;i_ebv<_n_ebv;i_ebv++){
+            ii=_unq_map[i_unq*_n_ebv+i_ebv];
+
+            if(ebv_grid[ii]<=ebv_max){
+
+                err=0.0;
+
+                for(j=0;j<n_valid_colors;j++){
+                    ibp1=_allowed_colors_bp1[_valid_color_dex[j]];
+                    ibp2=ibp1+1;
+
+                    sed_color=_sed_data[ii*n_mags+mag_map[ibp1]]-_sed_data[ii*n_mags+mag_map[ibp2]];
+                    err+=(sed_color-_star_color[j])*(sed_color-_star_color[j]);
                     if(dex_best>=0 && err+prior>err_and_prior_best){
                         break;
                     }
@@ -483,48 +642,8 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
                     dex_best=ii;
                     err_best=err;
                     err_and_prior_best=err+prior;
-                    i_unq_chosen=i_unq;
                  }
             }
-        }
-    }
-
-    dex_best=-1;
-    i_unq=i_unq_chosen;
-    ii=_unq_map[i_unq*_n_ebv];
-    if(_sed_type[ii]==KURUCZ){
-        prior=prior_arr[KURUCZ];
-    }
-    else if(_sed_type[ii]==MLT){
-        prior=prior_arr[MLT];
-    }
-    else if(_sed_type[ii]==WD){
-        prior=prior_arr[WD];
-    }
-
-    for(i_ebv=0;i_ebv<_n_ebv;i_ebv++){
-        ii=_unq_map[i_unq*_n_ebv+i_ebv];
-
-        if(ebv_grid[ii]<=ebv_max){
-
-            err=0.0;
-
-            for(j=0;j<n_valid_colors;j++){
-                ibp1=_allowed_colors_bp1[_valid_color_dex[j]];
-                ibp2=ibp1+1;
-
-                sed_color=_sed_data[ii*n_mags+mag_map[ibp1]]-_sed_data[ii*n_mags+mag_map[ibp2]];
-                err+=(sed_color-_star_color[j])*(sed_color-_star_color[j]);
-                if(dex_best>=0 && err+prior>err_and_prior_best){
-                    break;
-                }
-            }
-
-            if(dex_best<0 || err+prior<err_and_prior_best){
-                dex_best=ii;
-                err_best=err;
-                err_and_prior_best=err+prior;
-             }
         }
     }
 
@@ -535,6 +654,9 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     best_offset[0]=best_offset[0]/double(n_valid_mags);
 
     err_out[0]=sqrt(err_best/(n_valid_colors));
+
+    delete [] i_unq_list;
+    delete [] unq_best_err;
 
     return dex_best;
 
@@ -1234,6 +1356,7 @@ int main(int iargc, char *argv[]){
     }
 
     printf("that took %e to do %d\n",double(time(NULL))-t_start,total_ct);
+    printf("sorting took %e\n",_t_sort);
 
 }
 
