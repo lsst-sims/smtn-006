@@ -142,108 +142,45 @@ double power(double aa, int ee){
      return out;
 }
 
-//the routines below are just the merge sort routine from Numerical Recipes;
+void get_top_n(double *vals, int *dexes, int el, int nn){
 
-int scanner(double *m, int *indices, int index, int el){
-/*this will take the matrix m and put everything in it with value
-greater than element m[index] to the right of that element
-and everything less than m[index] to the left; it then returns
-the new index of that anchored element (which you now *know* is in
-the right spot*/
-
-        double toobig,toosmall;
-        int i,j,n,k,pp;
-        int itoobig,itoosmall;
-        FILE *output;
-
-        itoobig=0;
-        itoosmall=0;
-        for(i=0;i<el;i++){
-          if(m[i]<=m[index])itoosmall++;
-
+    int i;
+    int target,chosen;
+    double min_val,mu_copy;
+    int i_copy;
+    //first make sure that the first elements are in order
+    for(target=0;target<nn;target++){
+        chosen=-1;
+        for(i=target;i<nn;i++){
+            if(chosen<0 || vals[i]<min_val){
+                chosen=i;
+                min_val=vals[i];
+            }
         }
-
-        toobig=m[index];
-        itoobig=indices[index];
-
-        indices[index]=indices[itoosmall-1];
-        m[index]=m[itoosmall-1];
-
-        index=itoosmall-1;
-        m[index]=toobig;
-        indices[index]=itoobig;
-
-        i=0;
-        j=el-1;
-        n=0;
-        pp=1;
-        while(index<el-1 && n<el-1){
-         for(;m[i]<=m[index] && i<index;i++,n++);
-         itoobig=indices[i];
-         toobig=m[i];
-
-         for(;m[j]>m[index] && j>index;j--,n++){
-
-         }
-         itoosmall=indices[j];
-         toosmall=m[j];
-
-
-
-         if(toosmall<toobig){
-
-         //in case it ran to the end and i found m[index]
-          m[i]=toosmall;
-          indices[i]=itoosmall;
-
-          m[j]=toobig;
-          indices[j]=itoobig;
-         }
-
+        if(chosen!=target){
+            mu_copy=vals[target];
+            i_copy=dexes[target];
+            vals[target]=vals[chosen];
+            dexes[target]=dexes[chosen];
+            vals[chosen]=mu_copy;
+            dexes[chosen]=i_copy;
         }
+    }
 
-        return index;
-}
-
-void sort(double *m, int *indices, int el){
-        double *newm,junk;
-        int k,i,*newi,ii,diff;
-
-        if(el==2){
-         if(m[0]>m[1]){
-
-           junk=m[1];
-           m[1]=m[0];
-           m[0]=junk;
-
-           k=indices[1];
-           indices[1]=indices[0];
-           indices[0]=k;
-
-         }
+    int whereto,j;
+    for(i=nn;i<el;i++){
+        if(vals[i]<vals[nn-1]){
+            for(whereto=0;whereto<nn-1 && vals[whereto]<vals[i];whereto++);
+            mu_copy=vals[i];
+            i_copy=dexes[i];
+            for(j=nn-1;j>whereto;j--){
+                vals[j]=vals[j-1];
+                dexes[j]=dexes[j-1];
+            }
+            vals[whereto]=mu_copy;
+            dexes[whereto]=i_copy;
         }
-        else if(el>2){
-
-        diff=0; //just in case all elements are identical
-        for(ii=1;ii<el;ii++)if(m[ii]!=m[0])diff=1;
-
-        if(diff==1){
-
-           i=scanner(m,indices,el/2,el);
-
-           if(i+1<el){
-             newm=&m[i+1];
-            sort(m,indices,i+1);
-             newi=&indices[i+1];
-            sort(newm,newi,el-i-1);
-          }
-          else{
-            sort(m,indices,el-1);
-          }
-
-         }
-
-        }
+    }
 }
 
 int char_same(char *w1, char *w2){
@@ -599,15 +536,16 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     double err_best;
     double err_and_prior_best=1000000.0;
 
+    int top_n=100;
     double t_start=double(time(NULL));
-    sort(unq_best_err, i_unq_list, _n_unq_sed);
+    get_top_n(unq_best_err, i_unq_list, _n_unq_sed, top_n);
     _t_sort+=double(time(NULL))-t_start;
 
     int i_list;
 
     dex_best=-1;
 
-    for(i_list=0;i_list<100;i_list++){
+    for(i_list=0;i_list<top_n;i_list++){
         i_unq=i_unq_list[i_list];
         ii=_unq_map[i_unq*_n_ebv];
         if(_sed_type[ii]==KURUCZ){
@@ -653,7 +591,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     }
     best_offset[0]=best_offset[0]/double(n_valid_mags);
 
-    err_out[0]=sqrt(err_best/(n_valid_colors));
+    err_out[0]=sqrt(err_best/double(n_valid_colors));
 
     delete [] i_unq_list;
     delete [] unq_best_err;
