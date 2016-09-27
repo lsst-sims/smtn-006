@@ -487,7 +487,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     int *i_unq_list;
     double *unq_best_err;
     int ebv_step;
-    ebv_step=5;
+    ebv_step=10;
 
     double t_start;
 
