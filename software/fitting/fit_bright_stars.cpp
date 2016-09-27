@@ -1044,11 +1044,18 @@ int main(int iargc, char *argv[]){
     int *sed_to_raw_map;
     sed_to_raw_map = new int[_n_sed];
     for(i=0;i<_n_sed;i++){
+        sed_to_raw_map[i]=-1;
         for(j=0;j<n_raw_sed;j++){
             if(char_same(raw_sed_names[j], _sed_names[i])==1){
                     sed_to_raw_map[i]=j;
-                    continue;
+                    break;
             }
+
+        }
+        if(sed_to_raw_map[i]<0){
+            printf("WARNING could not find raw_map for %s\n",
+            _sed_names[i]);
+            exit(1);
         }
     }
 
