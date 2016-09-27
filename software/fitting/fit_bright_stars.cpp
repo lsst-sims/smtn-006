@@ -157,11 +157,18 @@ int char_same(char *w1, char *w2){
     return 1;
 }
 
+int _last_unq_dex=-1;
 
 int get_unq_sed_dex(char *name){
     int i;
+    if(_last_unq_dex>0 && _last_unq_dex<_n_unq_sed){
+        if(char_same(name, _unq_sed_name[_last_unq_dex])==1){
+            return _last_unq_dex;
+        }
+    }
     for(i=0;i<_n_unq_sed;i++){
         if(char_same(name, _unq_sed_name[i])==1){
+            _last_unq_dex=i;
             return i;
         }
     }
