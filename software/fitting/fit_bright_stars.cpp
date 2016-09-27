@@ -125,6 +125,14 @@ int _valid_color_dex[_n_allowed_colors];
 int _valid_mag_dex[n_star_mags];
 double _star_color[_n_allowed_colors];
 
+int _n_unq_sed=0;
+int _n_ebv;
+double *_unq_color,*_unq_color_max,*_unq_color_min;
+int *_unq_sed_type;
+char **_unq_sed_name;
+int *_unq_count,*_unq_map;
+int _default_mag_map[15]={8,9,18,19,20,21,22,17,0,1,2,3,4,5,6};  //from star_mag to sed mag
+
 double power(double aa, int ee){
      double out=1.0;
      int i;
@@ -149,6 +157,16 @@ int char_same(char *w1, char *w2){
     return 1;
 }
 
+
+int get_unq_sed_dex(char *name){
+    int i;
+    for(i=0;i<_n_unq_sed;i++){
+        if(char_same(name, _unq_sed_name[i])==1){
+            return i;
+        }
+    }
+    return -1;
+}
 
 long long int twos_complement(long long int ii){
     /*
@@ -349,9 +367,6 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
 
 
     int ii,j,k;
-    int dex_best=-1;
-    double err,err_best;
-    double err_and_prior_best=1000000.0;
 
     int n_valid_colors=0;
     int n_valid_mags=0;
@@ -415,7 +430,32 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     prior_arr[MLT] = -2.0*n_valid_colors*LOG_P_MLT;
     prior_arr[WD] = -2.0*n_valid_colors*LOG_P_WD;
 
-    for(ii=0;ii<_n_sed;ii++){
+    int i_unq;
+    int i_ebv;
+
+    int dex_best=-1;
+    double err,err_best;
+    double err_and_prior_best=1000000.0;
+    double mean_color_dist;
+
+    for(i_unq=0;i_unq<_n_unq_sed;i_unq++){
+
+        mean_color_dist=0.0;
+        for(j=0;j<n_valid_colors;j++){
+            if(_valid_color_dex[j]>=_n_allowed_colors){
+                printf("WARNING valid color dex is bad\n");
+                exit(1);
+            }
+            mean_color_dist+=power((_unq_color[i_unq*_n_allowed_colors+_valid_color_dex[j]]-_star_color[j])/
+                                   (_unq_color_max[i_unq*_n_allowed_colors+_valid_color_dex[j]]-
+                                     _unq_color_min[i_unq*_n_allowed_colors+_valid_color_dex[j]]),2);
+        }
+        mean_color_dist=sqrt(mean_color_dist);
+        if(mean_color_dist>1.0){
+            continue;
+        }
+
+        ii=_unq_map[i_unq*_n_ebv];
         if(_sed_type[ii]==KURUCZ){
             prior=prior_arr[KURUCZ];
         }
@@ -425,29 +465,37 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
         else if(_sed_type[ii]==WD){
             prior=prior_arr[WD];
         }
-        if(ebv_grid[ii]<=ebv_max){
 
-            err=0.0;
+        for(i_ebv=0;i_ebv<_n_ebv;i_ebv++){
+            ii=_unq_map[i_unq*_n_ebv+i_ebv];
 
-            for(j=0;j<n_valid_colors;j++){
-                ibp1=_allowed_colors_bp1[_valid_color_dex[j]];
-                ibp2=ibp1+1;
+            if(ebv_grid[ii]<=ebv_max){
 
-                sed_color=_sed_data[ii*n_mags+mag_map[ibp1]]-_sed_data[ii*n_mags+mag_map[ibp2]];
-                err+=(sed_color-_star_color[j])*(sed_color-_star_color[j]);
-                if(dex_best>=0 && err+prior>err_and_prior_best){
-                    break;
+                err=0.0;
+
+                for(j=0;j<n_valid_colors;j++){
+                    ibp1=_allowed_colors_bp1[_valid_color_dex[j]];
+                    ibp2=ibp1+1;
+
+                    sed_color=_sed_data[ii*n_mags+mag_map[ibp1]]-_sed_data[ii*n_mags+mag_map[ibp2]];
+                    err+=(sed_color-_star_color[j])*(sed_color-_star_color[j]);
+                    if(dex_best>=0 && err+prior>err_and_prior_best){
+                        break;
+                    }
                 }
-            }
 
-            if(ii==0 || err+prior<err_and_prior_best){
-                dex_best=ii;
-                err_best=err;
-                err_and_prior_best=err+prior;
-             }
+                if(dex_best<0 || err+prior<err_and_prior_best){
+                    dex_best=ii;
+                    err_best=err;
+                    err_and_prior_best=err+prior;
+                 }
+            }
         }
     }
 
+    if(dex_best<0){
+        printf("WARNING dex best %d\n",dex_best);
+    }
 
     best_offset[0]=0.0;
     for(j=0;j<n_valid_mags;j++){
@@ -778,11 +826,79 @@ int main(int iargc, char *argv[]){
     _sed_type=new int[_n_sed];
     _sed_data=new double[_n_sed*n_mags];
     _ebv_data=new double[_n_sed];
-    double ebv_min=100.0;
+    _unq_sed_name=new char*[_n_sed];
 
+    int unq_dex;
 
     for(i=0;i<_n_sed;i++){
         _sed_names[i]=new char[letters];
+        _unq_sed_name[i]=new char[letters];
+    }
+
+    _unq_count=new int[_n_sed];
+
+    _n_unq_sed=0;
+    input=fopen(sed_grid_name,"r");
+    for(i=0;i<n_mags+2;i++){
+        fscanf(input,"%s",word);
+    }
+    for(i=0;fscanf(input,"%s",_sed_names[i])>0;i++){
+
+        unq_dex=get_unq_sed_dex(_sed_names[i]);
+        if(unq_dex<0){
+            for(j=0;j<letters;j++){
+                _unq_sed_name[_n_unq_sed][j]=_sed_names[i][j];
+            }
+            _unq_count[_n_unq_sed]=1;
+            _n_unq_sed++;
+        }
+        else{
+            if(unq_dex>=_n_unq_sed){
+                printf("WARNING unq dex too big whle making names\n");
+                exit(1);
+            }
+            _unq_count[unq_dex]+=1;
+        }
+
+        for(j=0;j<n_mags+1;j++){
+            fscanf(input,"%le",&xx);
+        }
+    }
+    fclose(input);
+
+    for(i=0;i<_n_unq_sed;i++){
+        if(_unq_count[i]!=_unq_count[0]){
+            printf("WARNING: grid not regular %d\n",_unq_count[0]);
+            for(j=0;j<_n_unq_sed;j++){
+                if(_unq_count[j]!=_unq_count[0]){
+                    printf("%s %d\n",_unq_sed_name[j],_unq_count[j]);
+                }
+            }
+            exit(1);
+        }
+    }
+
+    printf("%d unique seds\n",_n_unq_sed);
+
+    _unq_color=new double[_n_unq_sed*_n_allowed_colors];
+    _unq_sed_type=new int[_n_unq_sed];
+    double ebv_min=100.0;
+
+    int ibp1, ibp2, i_color;
+    double color;
+    _unq_color_max=new double[_n_unq_sed*_n_allowed_colors];
+    _unq_color_min=new double[_n_unq_sed*_n_allowed_colors];
+
+    for(i=0;i<_n_unq_sed*_n_allowed_colors;i++){
+        _unq_color_max[i]=-1000000.0;
+        _unq_color_min[i]=1000000.0;
+    }
+
+    _n_ebv=_unq_count[0];
+    _unq_map=new int[_n_unq_sed*_n_ebv];
+
+    for(i=0;i<_n_unq_sed;i++){
+        _unq_count[i]=0;
     }
 
     // read in SEDs and E(B-V)s
@@ -802,7 +918,7 @@ int main(int iargc, char *argv[]){
             _sed_type[i]=WD;
         }
         else{
-           printf("Do not know type for %s\n",_sed_names[i]);
+           printf("Do not know type for %s (%d)\n",_sed_names[i],i);
            exit(1);
         }
         fscanf(input,"%le",&_ebv_data[i]);
@@ -813,9 +929,49 @@ int main(int iargc, char *argv[]){
         for(j=0;j<n_mags;j++){
             fscanf(input,"%le",&_sed_data[i*n_mags+j]);
         }
+
+        unq_dex=get_unq_sed_dex(_sed_names[i]);
+
+        if(unq_dex<0 || unq_dex>=_n_unq_sed){
+            printf("WARNING unq_dex %d; but %d\n",unq_dex,_n_unq_sed);
+            exit(1);
+        }
+
+        if(_unq_count[unq_dex]>=_n_ebv){
+            printf("WARNING unq count exceeded _n_ebv %d %d %s %s\n",
+            _n_ebv,_unq_count[unq_dex],_unq_sed_name[unq_dex],_sed_names[i]);
+            exit(1);
+        }
+
+        _unq_map[unq_dex*_n_ebv+_unq_count[unq_dex]]=i;
+        _unq_count[unq_dex]+=1;
+        _unq_sed_type[unq_dex]=_sed_type[i];
+
+        for(i_color=0;i_color<_n_allowed_colors;i_color++){
+            ibp1=_default_mag_map[_allowed_colors_bp1[i_color]];
+            ibp2=_default_mag_map[_allowed_colors_bp1[i_color]+1];
+            if(ibp1>=n_mags || ibp2>=n_mags){
+               printf("WARNING ibp1/2 out of bounds\n");
+               exit(1);
+            }
+            color = _sed_data[i*n_mags+ibp1]-_sed_data[i*n_mags+ibp2];
+            if(color<_unq_color_min[unq_dex*_n_allowed_colors+i_color]){
+                _unq_color_min[unq_dex*_n_allowed_colors+i_color]=color;
+            }
+            if(color>_unq_color_max[unq_dex*_n_allowed_colors+i_color]){
+                _unq_color_max[unq_dex*_n_allowed_colors+i_color]=color;
+            }
+        }
+
     }
     fclose(input);
 
+    for(i=0;i<_n_unq_sed;i++){
+        for(i_color=0;i_color<_n_allowed_colors;i_color++){
+            _unq_color[i*_n_allowed_colors+i_color]= \
+            0.5*(_unq_color_min[i*_n_allowed_colors+i_color]+_unq_color_max[i*_n_allowed_colors+i_color]);
+        }
+    }
 
     int n_raw_sed;
     char **raw_sed_names;
