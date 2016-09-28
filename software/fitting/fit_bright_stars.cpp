@@ -142,7 +142,9 @@ double power(double aa, int ee){
      return out;
 }
 
-void merge_sort(double *vals, int *dexes, int el){
+
+void merge_sort(double *vals, int *dexes, int el,
+                double *buffer1, int *i_buffer1, double *buffer2, int *i_buffer2){
 
     double mu_copy;
     int i_copy;
@@ -163,15 +165,24 @@ void merge_sort(double *vals, int *dexes, int el){
         return;
     }
 
-    merge_sort(vals, dexes, el/2);
-    merge_sort(&vals[el/2], &dexes[el/2], el-(el/2));
+    double *local_b1, *local_b2;
+    int *local_ib1, *local_ib2;
+    int made_buffers=0;
 
-    double *buffer1,*buffer2;
-    int *i_buffer1,*i_buffer2;
-    buffer1 = new double[el/2];
-    i_buffer1 = new int[el/2];
-    buffer2 = new double[el-(el/2)];
-    i_buffer2 = new int[el-(el/2)];
+    if(buffer1==NULL){
+        made_buffers=1;
+        local_b1 = new double[el];
+        local_b2 = new double[el];
+        local_ib1 = new int[el];
+        local_ib2 = new int[el];
+        buffer1 = local_b1;
+        buffer2 = local_b2;
+        i_buffer1 = local_ib1;
+        i_buffer2 = local_ib2;
+    }
+
+    merge_sort(vals, dexes, el/2, buffer1, i_buffer1, buffer2, i_buffer2);
+    merge_sort(&vals[el/2], &dexes[el/2], el-(el/2), buffer1, i_buffer1, buffer2, i_buffer2);
 
     int i,j;
     for(i=0;i<el/2;i++){
@@ -203,11 +214,18 @@ void merge_sort(double *vals, int *dexes, int el){
         }
     }
 
-    delete [] buffer1;
-    delete [] buffer2;
-    delete [] i_buffer1;
-    delete [] i_buffer2;
+    if(made_buffers==1){
+        delete [] local_b1;
+        delete [] local_b2;
+        delete [] local_ib1;
+        delete [] local_ib2;
+    }
 
+}
+
+
+void merge_sort(double *vals, int *dexes, int el){
+    merge_sort(vals, dexes, el, NULL, NULL, NULL, NULL);
 }
 
 void get_top_n(double *vals, int *dexes, int el, int nn){
