@@ -690,6 +690,11 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
     delete [] i_unq_list;
     delete [] unq_best_err;
 
+    if(dex_best<0){
+       printf("WARNING dex_best is negative\n");
+       exit(1);
+    }
+
     return dex_best;
 
 }
