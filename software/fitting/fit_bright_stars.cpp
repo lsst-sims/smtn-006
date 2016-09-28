@@ -212,30 +212,11 @@ void merge_sort(double *vals, int *dexes, int el){
 
 void get_top_n(double *vals, int *dexes, int el, int nn){
 
-    int i;
-    int target,chosen;
-    double min_val,mu_copy;
-    int i_copy;
-    //first make sure that the first elements are in order
-    for(target=0;target<nn;target++){
-        chosen=-1;
-        for(i=target;i<nn;i++){
-            if(chosen<0 || vals[i]<min_val){
-                chosen=i;
-                min_val=vals[i];
-            }
-        }
-        if(chosen!=target){
-            mu_copy=vals[target];
-            i_copy=dexes[target];
-            vals[target]=vals[chosen];
-            dexes[target]=dexes[chosen];
-            vals[chosen]=mu_copy;
-            dexes[chosen]=i_copy;
-        }
-    }
+    merge_sort(vals, dexes, nn);
 
-    int whereto,j;
+    int whereto,i,j;
+    double mu_copy;
+    int i_copy;
     for(i=nn;i<el;i++){
         if(vals[i]<vals[nn-1]){
             for(whereto=0;whereto<nn-1 && vals[whereto]<vals[i];whereto++);
