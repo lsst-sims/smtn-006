@@ -560,6 +560,8 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
 
     double t_start;
 
+    double local_ebv_max;
+
     i_unq_list = new int[_n_unq_sed];
     unq_best_err = new double[_n_unq_sed];
     for(j=0;j<_n_unq_sed;j++){
@@ -581,11 +583,20 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
             prior=prior_arr[WD];
         }
 
+        j=_unq_map[i_unq*_n_ebv+ebv_chosen[0]];
+
+        if(ebv_max>ebv_grid[j]){
+            local_ebv_max=ebv_max;
+        }
+        else{
+            local_ebv_max=ebv_grid[j]*1.01;
+        }
+
         for(i_ebv_chosen=0;i_ebv_chosen<n_ebv_chosen;i_ebv_chosen++){
             i_ebv = ebv_chosen[i_ebv_chosen];
             ii=_unq_map[i_unq*_n_ebv+i_ebv];
 
-            if(ebv_grid[ii]<=ebv_max){
+            if(ebv_grid[ii]<=local_ebv_max){
 
                 err=0.0;
 
