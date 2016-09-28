@@ -556,6 +556,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
 
     int ebv_chosen[4] = {10, 20, 40, 72};
     int i_ebv_chosen;
+    int n_ebv_chosen=4;
 
     double t_start;
 
@@ -580,7 +581,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
             prior=prior_arr[WD];
         }
 
-        for(i_ebv_chosen=0;i_ebv_chosen<4;i_ebv_chosen++){
+        for(i_ebv_chosen=0;i_ebv_chosen<n_ebv_chosen;i_ebv_chosen++){
             i_ebv = ebv_chosen[i_ebv_chosen];
             ii=_unq_map[i_unq*_n_ebv+i_ebv];
 
