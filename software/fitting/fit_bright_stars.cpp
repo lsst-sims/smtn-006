@@ -604,6 +604,9 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
                     unq_best_err[i_unq]=err+prior;
                  }
             }
+            else{
+                break;
+            }
         }
     }
 
