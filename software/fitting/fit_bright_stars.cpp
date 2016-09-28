@@ -142,6 +142,74 @@ double power(double aa, int ee){
      return out;
 }
 
+void merge_sort(double *vals, int *dexes, int el){
+
+    double mu_copy;
+    int i_copy;
+
+    if(el<2){
+        return;
+    }
+
+    if(el==2){
+        if(vals[0]>vals[1]){
+            mu_copy=vals[0];
+            i_copy=dexes[0];
+            vals[0]=vals[1];
+            dexes[0]=dexes[1];
+            vals[1]=mu_copy;
+            dexes[1]=i_copy;
+        }
+        return;
+    }
+
+    merge_sort(vals, dexes, el/2);
+    merge_sort(&vals[el/2], &dexes[el/2], el-(el/2));
+
+    double *buffer1,*buffer2;
+    int *i_buffer1,*i_buffer2;
+    buffer1 = new double[el/2];
+    i_buffer1 = new int[el/2];
+    buffer2 = new double[el-(el/2)];
+    i_buffer2 = new int[el-(el/2)];
+
+    int i,j;
+    for(i=0;i<el/2;i++){
+        buffer1[i]=vals[i];
+        i_buffer1[i]=dexes[i];
+    }
+    for(j=0;i<el;i++,j++){
+        buffer2[j]=vals[i];
+        i_buffer2[j]=vals[i];;
+    }
+
+    i=0;
+    j=0;
+    int place;
+    for(place=0;place<el;place++){
+        if(j<el-(el/2) && (i>=el/2 || buffer2[j]<buffer1[i])){
+            vals[place]=buffer2[j];
+            dexes[place]=i_buffer2[j];
+            j++;
+        }
+        else{
+            if(i>=el/2){
+                printf("WARNING i failure in merge_sort\n");
+                exit(1);
+            }
+            vals[place]=buffer1[i];
+            dexes[place]=i_buffer1[i];
+            i++;
+        }
+    }
+
+    delete [] buffer1;
+    delete [] buffer2;
+    delete [] i_buffer1;
+    delete [] i_buffer2;
+
+}
+
 void get_top_n(double *vals, int *dexes, int el, int nn){
 
     int i;
