@@ -133,6 +133,8 @@ char **_unq_sed_name;
 int *_unq_count,*_unq_map;
 int _default_mag_map[15]={8,9,18,19,20,21,22,17,0,1,2,3,4,5,6};  //from star_mag to sed mag
 
+int _do_prior=0;
+
 double power(double aa, int ee){
      double out=1.0;
      int i;
@@ -582,6 +584,9 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
         else if(_sed_type[ii]==WD){
             prior=prior_arr[WD];
         }
+        if(_do_prior==0){
+            prior=0.0;
+        }
 
         j=_unq_map[i_unq*_n_ebv+ebv_chosen[0]];
 
@@ -648,6 +653,9 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
         }
         else if(_sed_type[ii]==WD){
             prior=prior_arr[WD];
+        }
+        if(_do_prior==0){
+            prior=0.0;
         }
 
         for(i_ebv=0;i_ebv<_n_ebv;i_ebv++){
@@ -811,6 +819,9 @@ int main(int iargc, char *argv[]){
                         output_dir[j]=argv[i][j];
                     }
                     output_dir[j]=0;
+                    break;
+                case 'p':
+                    _do_prior=1;
                     break;
             }
         }
