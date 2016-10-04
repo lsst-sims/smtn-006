@@ -193,7 +193,7 @@ void merge_sort(double *vals, int *dexes, int el,
     }
     for(j=0;i<el;i++,j++){
         buffer2[j]=vals[i];
-        i_buffer2[j]=vals[i];;
+        i_buffer2[j]=dexes[i];
     }
 
     i=0;
