@@ -94,11 +94,11 @@ exist to standardize that process.
 
 #define _star_sst_dex 15
 
-#define _n_allowed_colors 11
+#define _n_allowed_colors 8
 
-int _allowed_colors_bp1[_n_allowed_colors]={0,2,3,4,5,6,8,9,11,12,13};
-double _color_min[_n_allowed_colors]={-3.0,-0.5,-0.53,-0.8,-0.32,-0.23,-1.7,-3.1,-1.03,-2.4,-1.5};
-double _color_max[_n_allowed_colors]={13.3,21.0,13.5,8.3,8.2,4.6,4.3,2.6,3.1,1.0,-0.18};
+int _allowed_colors_bp1[_n_allowed_colors]={0,2,3,4,5,6,8,9};
+double _color_min[_n_allowed_colors]={-3.0,-0.5,-0.53,-0.8,-0.32,-0.23,-1.7,-3.1};
+double _color_max[_n_allowed_colors]={13.3,21.0,13.5,8.3,8.2,4.6,4.3,2.6};
 
 #define n_mags 35
 #define n_star_mags 16
