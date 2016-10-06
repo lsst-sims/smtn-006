@@ -112,8 +112,8 @@ double _color_max[_n_allowed_colors]={13.3,21.0,13.5,8.3,8.2,4.6,4.3,2.6};
 #define MLT 2
 #define WD 3
 
-#define LOG_P_KURUCZ -0.51
-#define LOG_P_MLT -1.6
+#define LOG_P_KURUCZ -0.69
+#define LOG_P_MLT -1.2
 #define LOG_P_WD -1.6
 
 int _n_sed;
