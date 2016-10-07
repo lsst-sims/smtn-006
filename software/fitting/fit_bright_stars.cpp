@@ -571,7 +571,7 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
         i_unq_list[j]=j;
     }
 
-    t_start=double(time(NULL));
+    /*t_start=double(time(NULL));
     for(i_unq=0;i_unq<_n_unq_sed;i_unq++){
 
         ii=_unq_map[i_unq*_n_ebv];
@@ -626,24 +626,24 @@ int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_
         }
     }
 
-    _t_prelim+=double(time(NULL))-t_start;
+    _t_prelim+=double(time(NULL))-t_start;*/
 
     int dex_best=-1;
     double err_best;
     double err_and_prior_best=1000000.0;
 
     int top_n=300;
-    t_start=double(time(NULL));
+    /*t_start=double(time(NULL));
     get_top_n(unq_best_err, i_unq_list, _n_unq_sed, top_n);
-    _t_sort+=double(time(NULL))-t_start;
+    _t_sort+=double(time(NULL))-t_start;*/
 
     int i_list;
 
     dex_best=-1;
 
     t_start=double(time(NULL));
-    for(i_list=0;i_list<top_n;i_list++){
-        i_unq=i_unq_list[i_list];
+    for(i_unq=0;i_unq<_n_unq_sed;i_unq++){
+
         ii=_unq_map[i_unq*_n_ebv];
         if(_sed_type[ii]==KURUCZ){
             prior=prior_arr[KURUCZ];
