@@ -123,8 +123,7 @@ if __name__ == "__main__":
 
     #star_dir = os.path.join(getPackageDir('sims_sed_library'), 'starSED')
     sub_dir_list = ['kurucz', 'mlt', 'wDs']
-    star_dir = os.path.join('/astro', 'users', 'danielsf',
-                            'bright_stars', 'regen_kurucz')
+    star_dir = os.path.join(getPackageDir('sims_sed_library'), 'starSED')
     
     t_start = time.time()
 
