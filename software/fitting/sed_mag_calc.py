@@ -99,8 +99,7 @@ if __name__ == "__main__":
     ebv_list = np.append(ebv_list, np.arange(0.3, 7.0, 0.1))
 
     root_sed_dir = getPackageDir('sims_sed_library')
-    #sub_dir_list = ('high_temp_kurucz', 'kurucz', 'mlt', 'wDs')
-    sub_dir_list = ['high_temp_kurucz']
+    sub_dir_list = ('kurucz', 'mlt', 'wDs')
 
     t_before_bp = time.time()
 
