@@ -122,8 +122,7 @@ if __name__ == "__main__":
     imsimBand.imsimBandpass()
 
     #star_dir = os.path.join(getPackageDir('sims_sed_library'), 'starSED')
-    #sub_dir_list = ['high_temp_kurucz', 'kurucz', 'mlt', 'wDs']
-    sub_dir_list = ['high_temp_kurucz']
+    sub_dir_list = ['kurucz', 'mlt', 'wDs']
     star_dir = os.path.join('/astro', 'users', 'danielsf',
                             'bright_stars', 'regen_kurucz')
     
