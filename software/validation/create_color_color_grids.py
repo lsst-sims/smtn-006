@@ -177,8 +177,7 @@ if __name__ == "__main__":
             good_mags = good_data['%snoatm' % mm][good_dexes]
             ii_arr = (np.round((good_mags-mag_min)/dmag)).astype(int)
             unq, counts = np.unique(ii_arr, return_counts=True)
-            for ii, cc in zip(unq, counts):
-                fit_histograms[mm][ii] += cc
+            fit_histograms[mm][unq] += counts
 
             good_dexes = np.where(good_data['%s_in' % mm]>-98.0)
             good_mags = good_data['%s_in' % mm][good_dexes]
@@ -186,8 +185,7 @@ if __name__ == "__main__":
             ii_arr = np.where(ii_arr>=0, ii_arr, 0)
             ii_arr = np.where(ii_arr<n_hist, ii_arr, n_hist-1)
             unq, counts = np.unique(ii_arr, return_counts=True)
-            for ii, cc in zip(unq, counts):
-                input_histograms[mm][ii] += cc
+            input_histograms[mm][unq] += counts
 
         print '%.3e %.3e time %.3e' % (ct,ct_good,time.time()-t_start)
 
