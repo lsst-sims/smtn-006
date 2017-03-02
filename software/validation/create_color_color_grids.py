@@ -3,21 +3,9 @@ import numpy as np
 import os
 import time
 
-def populate_grid(data_in, mag1, mag2, mag3, dmag, grid):
-    good_dexes = np.where(np.logical_and(data_in[mag1]>-98.0,
-                          np.logical_and(data_in[mag2]>-98.0,
-                                         data_in[mag3]>-98.0)))
-
-    data = data_in[good_dexes]
-
-    if len(data)==0:
-        return None
-
-    color1 = data[mag1]-data[mag2]
-    color2 = data[mag2]-data[mag3]
-
-    data_x = np.round(color1/dmag).astype(int)
-    data_y = np.round(color2/dmag).astype(int)
+def _populate_grid(xx, yy, dd, grid):
+    data_x = np.round(xx/dd).astype(int)
+    data_y = np.round(yy/dd).astype(int)
 
     xmax = data_x.max()
     ymax = data_y.max()
@@ -42,12 +30,42 @@ def populate_grid(data_in, mag1, mag2, mag3, dmag, grid):
 
     return None
 
+
+def populate_mag_grid(data_in, mag, dmag, grid):
+    fit_tag = '%snoatm' % mag
+    input_tag = '%s_in' % mag
+    if len(data_in)==0:
+        return None
+    _populate_grid(data_in[input_tag], data_in[fit_tag],
+                   dmag, grid)
+
+    return None
+
+
+def populate_color_grid(data_in, mag1, mag2, mag3, dmag, grid):
+    good_dexes = np.where(np.logical_and(data_in[mag1]>-98.0,
+                          np.logical_and(data_in[mag2]>-98.0,
+                                         data_in[mag3]>-98.0)))
+
+    data = data_in[good_dexes]
+
+    if len(data)==0:
+        return None
+
+    color1 = data[mag1]-data[mag2]
+    color2 = data[mag2]-data[mag3]
+
+    _populate_grid(color1, color2, dmag, grid)
+
+    return None
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_dir", type=str, default=None)
-    parser.add_argument("--output_dir", type=str, default="plots")
+    parser.add_argument("--output_dir", type=str, default="plot_grids")
     parser.add_argument("--prefix", type=str, default=None)
+    parser.add_argument("--min_colors", type=int, default=-1)
 
     args = parser.parse_args()
     if args.input_dir is None:
@@ -90,56 +108,103 @@ if __name__ == "__main__":
                       ('residual', float), ('source', str, 300),
                       ('n_colors', int)])
 
-    fit_grids = {}
-    input_grids = {}
+    fit_color_grids = {}
+    input_color_grids = {}
+    fit_input_mag_grids = {}
     mags = ['u', 'g', 'r', 'i', 'z', 'y']
     for ix in range(len(mags)-2):
         mag1 = mags[ix]
-        fit_grids[mag1] = {}
-        input_grids[mag1] = {}
+        fit_color_grids[mag1] = {}
+        input_color_grids[mag1] = {}
+
+    for mag1 in mags:
+        fit_input_mag_grids[mag1] = {}
+
+    mag_min = -10.0
+    mag_max = 50.0
+    fit_histograms = {}
+    input_histograms = {}
+    n_hist = int(np.round((mag_max-mag_min)/dmag))
+    for mm in mags:
+        fit_histograms[mm] = np.zeros(n_hist)
+        input_histograms[mm] = np.zeros(n_hist)
 
     ct = 0
     ct_good = 0
     t_start = time.time()
     list_of_files = os.listdir(args.input_dir)
-    for file_name in list_of_files:
+    for file_name in list_of_files[:5]:
         if 'ebv_grid' not in file_name:
             continue
 
         full_name = os.path.join(args.input_dir, file_name)
         data = np.genfromtxt(full_name, dtype=dtype)
-        good_dexes = np.where(data['goodbit']==1)
+
+        good_dexes = np.where(np.logical_and(data['goodbit']==1, data['n_colors']>=args.min_colors))
         good_data = data[good_dexes]
+
+        ct+=len(data)
+        ct_good+=len(good_dexes[0])
+
+        for mm in mags:
+            populate_mag_grid(good_data, mm, dmag, fit_input_mag_grids[mm])
 
         for ix in range(len(mags)-2):
             mag1 = '%snoatm' % mags[ix]
             mag2 = '%snoatm' % mags[ix+1]
             mag3 = '%snoatm' % mags[ix+2]
-            populate_grid(good_data, mag1, mag2, mag3, dmag, fit_grids[mags[ix]])
+            populate_color_grid(good_data, mag1, mag2, mag3, dmag, fit_color_grids[mags[ix]])
 
             mag1 = '%s_in' % mags[ix]
             mag2 = '%s_in' % mags[ix+1]
             mag3 = '%s_in' % mags[ix+2]
-            populate_grid(good_data, mag1, mag2, mag3, dmag, input_grids[mags[ix]])
+            populate_color_grid(good_data, mag1, mag2, mag3, dmag, input_color_grids[mags[ix]])
 
-        ct+=len(data)
-        ct_good+=len(good_dexes[0])
+        for mm in mags:
+            good_dexes = np.where(good_data['%snoatm' % mm]>-98.0)
+            good_mags = good_data['%snoatm' % mm][good_dexes]
+            ii_arr = (np.round((good_mags-mag_min)/dmag)).astype(int)
+            unq, counts = np.unique(ii_arr, return_counts=True)
+            for ii, cc in zip(unq, counts):
+                fit_histograms[mm][ii] += cc
+
+            good_dexes = np.where(good_data['%s_in' % mm]>-98.0)
+            good_mags = good_data['%s_in' % mm][good_dexes]
+            ii_arr = (np.round((good_mags-mag_min)/dmag)).astype(int)
+            ii_arr = np.where(ii_arr>=0, ii_arr, 0)
+            ii_arr = np.where(ii_arr<n_hist, ii_arr, n_hist-1)
+            unq, counts = np.unique(ii_arr, return_counts=True)
+            for ii, cc in zip(unq, counts):
+                input_histograms[mm][ii] += cc
+
         print '%.3e %.3e time %.3e' % (ct,ct_good,time.time()-t_start)
 
-    for mag1 in fit_grids:
-        with open(os.path.join(args.output_dir, '%s_%s_fit_grid_data.txt' % (args.prefix, mag1)), 'w') as out_file:
-            grid = fit_grids[mag1]
+    for mag1 in fit_color_grids:
+        with open(os.path.join(args.output_dir, '%s_color_color_fit_%s.txt' % (args.prefix, mag1)), 'w') as out_file:
+            grid = fit_color_grids[mag1]
             for xx in grid:
                 for yy in grid[xx]:
                     out_file.write('%.6e %.6e %d\n' % (xx*dmag, yy*dmag, grid[xx][yy]))
 
-    for mag1 in input_grids:
-        with open(os.path.join(args.output_dir, '%s_%s_input_grid_data.txt' % (args.prefix, mag1)), 'w') as out_file:
-            grid = input_grids[mag1]
+    for mag1 in input_color_grids:
+        with open(os.path.join(args.output_dir, '%s_color_color_input_%s.txt' % (args.prefix, mag1)), 'w') as out_file:
+            grid = input_color_grids[mag1]
             for xx in grid:
                 for yy in grid[xx]:
                     out_file.write('%.6e %.6e %d\n' % (xx*dmag, yy*dmag, grid[xx][yy]))
 
+    for mm in mags:
+        with open(os.path.join(args.output_dir, '%s_%s_fit_histogram.txt' % (args.prefix, mm)), 'w') as out_file:
+            for ix in range(n_hist):
+                out_file.write('%e %e\n' % (mag_min + ix*dmag, fit_histograms[mm][ix]))
 
+        with open(os.path.join(args.output_dir, '%s_%s_input_histogram.txt' % (args.prefix, mm)), 'w') as out_file:
+            for ix in range(n_hist):
+                out_file.write('%e %e\n' % (mag_min + ix*dmag, input_histograms[mm][ix]))
 
-
+        with open(os.path.join(args.output_dir, '%s_%s_input_vs_fit.txt' % (args.prefix, mm)), 'w') as out_file:
+            grid = fit_input_mag_grids[mm]
+            out_file.write('# input_mag fit_mag ct\n')
+            for xx in grid:
+                for yy in grid[xx]:
+                    out_file.write('%.6e %.6e %d\n' % (xx*dmag, yy*dmag, grid[xx][yy]))
