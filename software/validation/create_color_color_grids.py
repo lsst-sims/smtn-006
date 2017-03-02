@@ -196,27 +196,27 @@ if __name__ == "__main__":
             grid = fit_color_grids[mag1]
             for xx in grid:
                 for yy in grid[xx]:
-                    out_file.write('%.6e %.6e %d\n' % (xx*dmag, yy*dmag, grid[xx][yy]))
+                    out_file.write('%.3f %.3f %d\n' % (xx*dmag, yy*dmag, grid[xx][yy]))
 
     for mag1 in input_color_grids:
         with open(os.path.join(args.output_dir, '%s_color_color_input_%s.txt' % (args.prefix, mag1)), 'w') as out_file:
             grid = input_color_grids[mag1]
             for xx in grid:
                 for yy in grid[xx]:
-                    out_file.write('%.6e %.6e %d\n' % (xx*dmag, yy*dmag, grid[xx][yy]))
+                    out_file.write('%.3f %.3f %d\n' % (xx*dmag, yy*dmag, grid[xx][yy]))
 
     for mm in mags:
         with open(os.path.join(args.output_dir, '%s_%s_fit_histogram.txt' % (args.prefix, mm)), 'w') as out_file:
             for ix in range(n_hist):
-                out_file.write('%e %e\n' % (mag_min + ix*dmag, fit_histograms[mm][ix]))
+                out_file.write('%.3f %e\n' % (mag_min + ix*dmag, fit_histograms[mm][ix]))
 
         with open(os.path.join(args.output_dir, '%s_%s_input_histogram.txt' % (args.prefix, mm)), 'w') as out_file:
             for ix in range(n_hist):
-                out_file.write('%e %e\n' % (mag_min + ix*dmag, input_histograms[mm][ix]))
+                out_file.write('%.3f %e\n' % (mag_min + ix*dmag, input_histograms[mm][ix]))
 
         with open(os.path.join(args.output_dir, '%s_%s_input_vs_fit.txt' % (args.prefix, mm)), 'w') as out_file:
             grid = fit_input_mag_grids[mm]
             out_file.write('# input_mag fit_mag ct\n')
             for xx in grid:
                 for yy in grid[xx]:
-                    out_file.write('%.6e %.6e %d\n' % (xx*dmag, yy*dmag, grid[xx][yy]))
+                    out_file.write('%.3f %.3f %d\n' % (xx*dmag, yy*dmag, grid[xx][yy]))
