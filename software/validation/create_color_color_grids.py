@@ -1,3 +1,4 @@
+from __future__ import with_statement
 import argparse
 import numpy as np
 import os
@@ -66,12 +67,24 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", type=str, default="plot_grids")
     parser.add_argument("--prefix", type=str, default=None)
     parser.add_argument("--min_colors", type=int, default=-1)
+    parser.add_argument("--to_do_list", type=str, default=None)
 
     args = parser.parse_args()
     if args.input_dir is None:
         raise RuntimeError("Must specify input directory")
     if args.prefix is None:
         raise RuntimeError("Must specify prefix for output file")
+    if args.to_do_list is None:
+        raise RuntimeError("Must pass in a to_do_list")
+
+    if not os.path.exists(args.output_dir) or not os.path.isdir(args.output_dir):
+        raise RuntimeError("%s either does not exist or is not a dir" % args.output_dir)
+
+    list_of_files = []
+    with open(args.to_do_list, 'r') as input_file:
+        lines = input_file.readlines()
+        for line in lines:
+            list_of_files.append(line.strip())
 
     dmag = 0.05
 
@@ -132,7 +145,6 @@ if __name__ == "__main__":
     ct = 0
     ct_good = 0
     t_start = time.time()
-    list_of_files = os.listdir(args.input_dir)
     for file_name in list_of_files:
         if 'ebv_grid' not in file_name:
             continue
