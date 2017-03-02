@@ -17,22 +17,34 @@ import healpy as hp
 import os
 
 import time
-import sys
+
+import argparse
 
 if __name__ == "__main__":
 
-    if len(sys.argv) != 3:
-        print "Need to pass in a to do list and a job dex"
-        # job dex is an integer appended to the end of the output
-        # files produced by this script so they don't collide with
-        # the output files produced by another script.  This is done
-        # so that you can run many jobs in parallel and get through
-        # the whole catalog faster.
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--to_do", type=str, default=None)
+    parser.add_argument("--dex", type=int, help="index of this job",
+                        default=None)
+    parser.add_argument("--out_dir", type=str, default=None)
+    parser.add_argument("--out_prefix", type=str, default=None)
+    parser.add_argument("--input_dir", type=str, default=None)
 
+    args = parser.parse_args()
+    if args.to_do is None:
+        raise RuntimeError("Need to pass in a to do list")
+    if args.dex is None:
+        raise RuntimeError("Need to pass in a dex")
+    if args.out_dir is None:
+        raise RuntimeError("Need to specify out_dir")
+    if args.out_prefix is None:
+        raise RuntimeError("Need to specify out_prefix")
+    if args.input_dir is None:
+        raise RuntimeError("Need to specify input_dir")
 
-    to_do_list_file = sys.argv[1]
-    job_dex = int(sys.argv[2])
-    print to_do_list_file, job_dex
+    to_do_list_file = args.to_do
+
+    print to_do_list_file, args.dex
 
     t_start = time.time()
 
@@ -47,41 +59,63 @@ if __name__ == "__main__":
 
     mag_bounds = np.arange(9.0, 17.5, 0.5)
 
+    mag_name_list = ['u_in', 'g_in', 'r_in', 'i_in', 'z_in', 'y_in',
+                     'unoatm', 'gnoatm', 'rnoatm', 'inoatm', 'znoatm', 'ynoatm']
+
     grid_dict = {}
-    for name in ('u', 'g', 'r', 'i', 'z', 'y'):
+    for name in mag_name_list:
         grid_dict[name] = {}
         for mm in mag_bounds:
             grid_dict[name][mm] = np.zeros(n_pix)
-
-
 
     ra_max = None
     ra_min = None
     dec_max = None
     dec_min = None
 
-    data_dtype = np.dtype([('id', long),
-                           ('ra', float), ('dec', float),
-                           ('mura', float), ('mudec', float),
-                           ('b', float), ('v', float),
-                           ('u', float), ('g', float),
-                           ('r', float), ('i', float),
-                           ('z', float), ('y', float),
-                           ('j', float), ('h', float), ('k', float),
-                           ('w1', float), ('w2', float),
-                           ('w3', float), ('w4', float),
-                           ('sst', float), ('flag', long)])
+    dtype = np.dtype([('id', long), ('ra', float), ('dec', float),
+                      ('pmra', float), ('pmdec', float),
+                      ('lon', float), ('lat', float),
+                      ('sedname', str, 300), ('magnorm', float),
+                      ('flux_factor', float), ('ebv', float),
+                      ('unoatm', float), ('gnoatm', float), ('rnoatm', float),
+                      ('inoatm', float), ('znoatm', float), ('ynoatm', float),
+                      ('u', float), ('g', float), ('r', float),
+                      ('i', float), ('z', float), ('y', float),
+                      ('b_in', float), ('v_in', float),
+                      ('u_in', float), ('g_in', float), ('r_in', float),
+                      ('i_in', float), ('z_in', float), ('y_in', float),
+                      ('j_in', float), ('h_in', float), ('k_in', float),
+                      ('w1_in', float), ('w2_in', float), ('w3_in', float),
+                      ('w4_in', float), ('sst_in', float),
+                      ('b4bit', int), ('2massbit', int), ('sdssbit', int),
+                      ('ppmxlbit', int), ('ucac4bit', int), ('tychobit', int),
+                      ('hipparcosbit', int), ('allwisebit', int),
+                      ('levinesharabit', int), ('apassbit', int),
+                      ('ps1bit', int), ('2massexbit', int),
+                      ('astro0bit', int), ('astro1bit', int),
+                      ('astro2bit', int), ('astro3bit', int),
+                      ('photo0bit', int), ('photo1bit', int),
+                      ('photo2bit', int), ('photo3bit', int),
+                      ('clipbit', int), ('ppmxlresid_bit', int),
+                      ('worrybit', int), ('gribit', int),
+                      ('dirtybit', int), ('spikebit', int),
+                      ('confusedbit', int), ('bvbit', int),
+                      ('goodbit', int), ('norbit', int),
+                      ('galaxbit', int), ('gvsbit', int),
+                      ('residual', float), ('source', str, 300),
+                      ('n_colors', int)])
 
     total_stars = 0
 
     for file_name in input_file_list:
         file_name = file_name.strip()
         print file_name,total_stars,time.time()-t_start
-        data = np.genfromtxt(file_name,
-                             dtype=data_dtype, delimiter=',')
+        data = np.genfromtxt(os.path.join(args.input_dir, file_name),
+                             dtype=dtype, delimiter=' ')
 
         total_stars += len(data['ra'])
-        for name in ('u', 'g', 'r', 'i', 'z', 'y'):
+        for name in mag_name_list:
             for ix, bound in enumerate(mag_bounds):
                 if ix > 0 and ix<len(mag_bounds)-1:
                     min_mag = mag_bounds[ix-1]
@@ -98,12 +132,11 @@ if __name__ == "__main__":
                 i_pix_raw = hp.ang2pix(NSIDE, np.radians(90.0-data['dec'][valid_stars]),
                                        np.radians(data['ra'][valid_stars]))
 
-                i_pix = np.unique(i_pix_raw)
-                i_pix_add = np.array([len(np.where(i_pix_raw == ii)[0]) for ii in i_pix])
-                grid_dict[name][bound][i_pix] += i_pix_add
+                i_pix, counts = np.unique(i_pix_raw, return_counts=True)
+                grid_dict[name][bound][i_pix] += counts
 
 
-    for name in ('u', 'g', 'r', 'i', 'z', 'y'):
+    for name in mag_name_list:
       for ibound, mm in enumerate(mag_bounds):
 
             if ibound>0 and ibound<len(mag_bounds)-1:
@@ -113,7 +146,9 @@ if __name__ == "__main__":
             else:
                 fig_title = '%s > %.2f' % (name, mag_bounds[ibound])
 
-            with open("healpix_control_grid_%s_%d_job%d.txt" % (name, ibound, job_dex), "w") as output_file:
+            with open(os.path.join(args.out_dir, "%s_healpix_grid_%s_%d_job%d.txt" %
+                      (args.out_prefix, name, ibound, args.dex)), "w") as output_file:
+
                 output_file.write("# %s\n" % fig_title)
                 output_file.write("# nside %d\n" % NSIDE)
 
