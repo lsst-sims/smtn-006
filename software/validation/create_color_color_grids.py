@@ -133,7 +133,7 @@ if __name__ == "__main__":
     ct_good = 0
     t_start = time.time()
     list_of_files = os.listdir(args.input_dir)
-    for file_name in list_of_files[:5]:
+    for file_name in list_of_files:
         if 'ebv_grid' not in file_name:
             continue
 
