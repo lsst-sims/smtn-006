@@ -26,7 +26,8 @@ def populate_grid(input_dir, mag1, grid):
 
     return None
 
-def plot_grid(grid, xlabel, ylabel, title, i_fig):
+def plot_grid(grid, xlabel, ylabel, title, i_fig,
+              xbounds=None, ybounds=None):
     x_arr = []
     y_arr = []
     ct_arr = []
@@ -54,9 +55,20 @@ def plot_grid(grid, xlabel, ylabel, title, i_fig):
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
+    if xbounds is not None:
+        plt.xlim(xbounds)
+    else:
+        plt.xlim((x_arr.min(), x_arr.max()))
+
+    if ybounds is not None:
+        plt.ylim(ybounds)
+    else:
+        plt.ylim((y_arr.min(), y_arr.max()))
+
     if i_fig==1:
         cb = plt.colorbar()
 
+    return (x_arr.min(), x_arr.max()), (y_arr.min(), y_arr.max())
 
 if __name__ == "__main__":
 
@@ -93,14 +105,15 @@ if __name__ == "__main__":
         ylabel = '%s-%s' % (mag2, mag3)
 
         grid = {}
-        populate_grid(color_color_input_dir, mag1, grid)
-        title = 'input'
-        plot_grid(grid, xlabel, ylabel, title, 1)
-
-        grid = {}
         populate_grid(color_color_fit_dir, mag1, grid)
         title = 'fit'
-        plot_grid(grid, xlabel, ylabel, title, 2)
+        xbounds, ybounds = plot_grid(grid, xlabel, ylabel, title, 2)
+
+        grid = {}
+        populate_grid(color_color_input_dir, mag1, grid)
+        title = 'input'
+        plot_grid(grid, xlabel, ylabel, title, 1,
+                  xbounds=xbounds, ybounds=ybounds)
 
         plt.tight_layout()
         plt.savefig(fig_name)
