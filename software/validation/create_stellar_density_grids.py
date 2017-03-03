@@ -24,27 +24,37 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--to_do", type=str, default=None)
-    parser.add_argument("--dex", type=int, help="index of this job",
-                        default=None)
-    parser.add_argument("--out_dir", type=str, default=None)
-    parser.add_argument("--out_prefix", type=str, default=None)
+    parser.add_argument("--suffix", type=str, default='')
+    parser.add_argument("--output_dir", type=str, default=None)
     parser.add_argument("--input_dir", type=str, default=None)
+    parser.add_argument("--dmag", type=float, default=1.0)
+    parser.add_argument("--min_colors", type=int, default=-1)
 
     args = parser.parse_args()
     if args.to_do is None:
         raise RuntimeError("Need to pass in a to do list")
-    if args.dex is None:
-        raise RuntimeError("Need to pass in a dex")
-    if args.out_dir is None:
-        raise RuntimeError("Need to specify out_dir")
-    if args.out_prefix is None:
-        raise RuntimeError("Need to specify out_prefix")
+    if args.output_dir is None:
+        raise RuntimeError("Need to specify output_dir")
     if args.input_dir is None:
         raise RuntimeError("Need to specify input_dir")
 
-    to_do_list_file = args.to_do
+    if os.path.exists(args.output_dir) and not os.path.isdir(args.output_dir):
+        raise RuntimeError("%s is not a dir" % args.output_dir)
 
-    print to_do_list_file, args.dex
+    if not os.path.exists(args.output_dir):
+        os.mkdir(args.output_dir)
+
+    fit_maps_dir = os.path.join(args.output_dir, "fit_healpix_maps")
+    if not os.path.exists(fit_maps_dir):
+        os.mkdir(fit_maps_dir)
+
+    input_maps_dir = os.path.join(args.output_dir, "input_healpix_maps")
+    if not os.path.exists(input_maps_dir):
+        os.mkdir(input_maps_dir)
+
+    mag_bounds = np.arange(9.0, 17.5, args.dmag)
+
+    to_do_list_file = args.to_do
 
     t_start = time.time()
 
@@ -56,8 +66,6 @@ if __name__ == "__main__":
 
     with open(to_do_list_file, "r") as input_file:
         input_file_list = input_file.readlines()
-
-    mag_bounds = np.arange(9.0, 17.5, 0.5)
 
     mag_name_list = ['u_in', 'g_in', 'r_in', 'i_in', 'z_in', 'y_in',
                      'unoatm', 'gnoatm', 'rnoatm', 'inoatm', 'znoatm', 'ynoatm']
@@ -114,6 +122,11 @@ if __name__ == "__main__":
         data = np.genfromtxt(os.path.join(args.input_dir, file_name),
                              dtype=dtype, delimiter=' ')
 
+        good_dexes = np.where(np.logical_and(data['n_colors']>=args.min_colors,
+                                             data['goodbit']==1))
+
+        data = data[good_dexes]
+
         total_stars += len(data['ra'])
         for name in mag_name_list:
             for ix, bound in enumerate(mag_bounds):
@@ -135,19 +148,29 @@ if __name__ == "__main__":
                 i_pix, counts = np.unique(i_pix_raw, return_counts=True)
                 grid_dict[name][bound][i_pix] += counts
 
+    for sub_dir in (fit_maps_dir, input_maps_dir):
+        with open(os.path.join(sub_dir, 'number_of_bounds.txt'), 'w') as out_file:
+            out_file.write('%d\n' % len(mag_bounds))
 
     for name in mag_name_list:
-      for ibound, mm in enumerate(mag_bounds):
+        if 'noatm' in name:
+            sub_dir = fit_maps_dir
+            print name,sub_dir
+        elif '_in' in name:
+            sub_dir = input_maps_dir
+            print name,sub_dir
+        file_name = name.replace('_in','').replace('noatm','')
 
+        for ibound, mm in enumerate(mag_bounds):
             if ibound>0 and ibound<len(mag_bounds)-1:
-                fig_title='%.2f <= %s < %.2f ' % (mag_bounds[ibound-1], name, mag_bounds[ibound])
+                fig_title='%.2f <= %s < %.2f ' % (mag_bounds[ibound-1], file_name, mag_bounds[ibound])
             elif ibound==0:
-                fig_title = '%s < %.2f' % (name, mag_bounds[ibound])
+                fig_title = '%s < %.2f' % (file_name, mag_bounds[ibound])
             else:
-                fig_title = '%s > %.2f' % (name, mag_bounds[ibound])
+                fig_title = '%s > %.2f' % (file_name, mag_bounds[ibound])
 
-            with open(os.path.join(args.out_dir, "%s_healpix_grid_%s_%d_job%d.txt" %
-                      (args.out_prefix, name, ibound, args.dex)), "w") as output_file:
+            with open(os.path.join(sub_dir, "%s_%d%s.txt" %
+                      (file_name, ibound, args.suffix)), "w") as output_file:
 
                 output_file.write("# %s\n" % fig_title)
                 output_file.write("# nside %d\n" % NSIDE)
