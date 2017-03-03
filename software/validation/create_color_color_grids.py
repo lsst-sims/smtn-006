@@ -64,21 +64,44 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_dir", type=str, default=None)
-    parser.add_argument("--output_dir", type=str, default="plot_grids")
-    parser.add_argument("--prefix", type=str, default=None)
+    parser.add_argument("--output_dir", type=str, default=None)
     parser.add_argument("--min_colors", type=int, default=-1)
     parser.add_argument("--to_do_list", type=str, default=None)
+    parser.add_argument("--suffix", type=str, default='')
 
     args = parser.parse_args()
+    if args.output_dir is None:
+        raise RuntimeError("Must specify output_dir")
     if args.input_dir is None:
         raise RuntimeError("Must specify input directory")
-    if args.prefix is None:
-        raise RuntimeError("Must specify prefix for output file")
     if args.to_do_list is None:
         raise RuntimeError("Must pass in a to_do_list")
 
-    if not os.path.exists(args.output_dir) or not os.path.isdir(args.output_dir):
+    if os.path.exists(args.output_dir) and not os.path.isdir(args.output_dir):
         raise RuntimeError("%s either does not exist or is not a dir" % args.output_dir)
+
+    if not os.path.exists(args.output_dir):
+        os.mkdir(args.output_dir)
+
+    color_color_fit_dir = os.path.join(args.output_dir, 'color_color_fit')
+    if not os.path.exists(color_color_fit_dir):
+        os.mkdir(color_color_fit_dir)
+
+    color_color_input_dir = os.path.join(args.output_dir, 'color_color_input')
+    if not os.path.exists(color_color_input_dir):
+        os.mkdir(color_color_input_dir)
+
+    fit_histogram_dir = os.path.join(args.output_dir, 'fit_histogram')
+    if not os.path.exists(fit_histogram_dir):
+        os.mkdir(fit_histogram_dir)
+
+    input_histogram_dir = os.path.join(args.output_dir, 'input_histogram')
+    if not os.path.exists(input_histogram_dir):
+        os.mkdir(input_histogram_dir)
+
+    input_vs_fit_dir = os.path.join(args.output_dir, 'input_vs_fit')
+    if not os.path.exists(input_vs_fit_dir):
+        os.mkdir(input_vs_fit_dir)
 
     list_of_files = []
     with open(args.to_do_list, 'r') as input_file:
@@ -190,29 +213,29 @@ if __name__ == "__main__":
         print '%.3e %.3e time %.3e' % (ct,ct_good,time.time()-t_start)
 
     for mag1 in fit_color_grids:
-        with open(os.path.join(args.output_dir, '%s_color_color_fit_%s.txt' % (args.prefix, mag1)), 'w') as out_file:
+        with open(os.path.join(color_color_fit_dir, '%s%s.txt' % (mag1, args.suffix)), 'w') as out_file:
             grid = fit_color_grids[mag1]
             for xx in grid:
                 for yy in grid[xx]:
                     out_file.write('%.3f %.3f %d\n' % (xx*dmag, yy*dmag, grid[xx][yy]))
 
     for mag1 in input_color_grids:
-        with open(os.path.join(args.output_dir, '%s_color_color_input_%s.txt' % (args.prefix, mag1)), 'w') as out_file:
+        with open(os.path.join(color_color_input_dir, '%s%s.txt' % (mag1, args.suffix)), 'w') as out_file:
             grid = input_color_grids[mag1]
             for xx in grid:
                 for yy in grid[xx]:
                     out_file.write('%.3f %.3f %d\n' % (xx*dmag, yy*dmag, grid[xx][yy]))
 
     for mm in mags:
-        with open(os.path.join(args.output_dir, '%s_%s_fit_histogram.txt' % (args.prefix, mm)), 'w') as out_file:
+        with open(os.path.join(fit_histogram_dir, '%s%s.txt' % (mm, args.suffix)), 'w') as out_file:
             for ix in range(n_hist):
                 out_file.write('%.3f %e\n' % (mag_min + ix*dmag, fit_histograms[mm][ix]))
 
-        with open(os.path.join(args.output_dir, '%s_%s_input_histogram.txt' % (args.prefix, mm)), 'w') as out_file:
+        with open(os.path.join(input_histogram_dir, '%s%s.txt' % (mm, args.suffix)), 'w') as out_file:
             for ix in range(n_hist):
                 out_file.write('%.3f %e\n' % (mag_min + ix*dmag, input_histograms[mm][ix]))
 
-        with open(os.path.join(args.output_dir, '%s_%s_input_vs_fit.txt' % (args.prefix, mm)), 'w') as out_file:
+        with open(os.path.join(input_vs_fit_dir, '%s%s.txt' % (mm, args.suffix)), 'w') as out_file:
             grid = fit_input_mag_grids[mm]
             out_file.write('# input_mag fit_mag ct\n')
             for xx in grid:
