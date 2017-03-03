@@ -27,7 +27,7 @@ def populate_grid(input_dir, mag1, grid):
     return None
 
 def plot_grid(grid, xlabel, ylabel, title, i_fig,
-              xbounds=None, ybounds=None):
+              xbounds=None, ybounds=None, rows=1, cols=2):
     x_arr = []
     y_arr = []
     ct_arr = []
@@ -48,27 +48,31 @@ def plot_grid(grid, xlabel, ylabel, title, i_fig,
 
     cum_arr = np.cumsum(ct_arr)
 
-    plt.subplot(1, 2, i_fig)
+    plt.subplot(rows, cols, i_fig)
     plt.scatter(x_arr, y_arr, c=cum_arr.astype(float)/ct_arr.sum(),
                 edgecolor='',s=5,
                 cmap=plt.cm.gist_ncar)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    plt.title(title)
+    if title is not None:
+        plt.title(title)
+
     if xbounds is not None:
         plt.xlim(xbounds)
     else:
-        plt.xlim((x_arr.min(), x_arr.max()))
+        xbounds = (x_arr.min()-0.5, x_arr.max()+0.5)
+        plt.xlim(xbounds)
 
     if ybounds is not None:
         plt.ylim(ybounds)
     else:
-        plt.ylim((y_arr.min(), y_arr.max()))
+        ybounds = (y_arr.min()-0.5, y_arr.max()+0.5)
+        plt.ylim(ybounds)
 
     if i_fig==1:
         cb = plt.colorbar()
 
-    return (x_arr.min(), x_arr.max()), (y_arr.min(), y_arr.max())
+    return xbounds, ybounds
 
 
 def populate_histogram(input_dir, mag, histogram):
@@ -163,6 +167,21 @@ if __name__ == "__main__":
                        ['input', 'fit'], loc=0)
 
         print '%s fit: %d input: %d' % (mag, int(fit_hist['ct'].sum()), int(input_hist['ct'].sum()))
+
+    plt.tight_layout()
+    plt.savefig(fig_name)
+    plt.close()
+
+    fig_name = os.path.join(args.output_dir, 'input_vs_fit_mags.png')
+    plt.figsize=(30,30)
+    input_vs_fit_dir = os.path.join(args.input_dir, "input_vs_fit")
+    for i_fig, mag in enumerate(mag_list):
+        grid = {}
+        populate_grid(input_vs_fit_dir, mag, grid)
+        xbounds, ybounds = plot_grid(grid, '%s_in' % mag, '%s_fit' % mag, None, i_fig+1,
+                                     rows=3, cols=2)
+
+        plt.plot(ybounds, ybounds, linewidth=0.5, color='r')
 
     plt.tight_layout()
     plt.savefig(fig_name)
