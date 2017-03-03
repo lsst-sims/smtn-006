@@ -70,6 +70,25 @@ def plot_grid(grid, xlabel, ylabel, title, i_fig,
 
     return (x_arr.min(), x_arr.max()), (y_arr.min(), y_arr.max())
 
+
+def populate_histogram(input_dir, mag, histogram):
+    list_of_files = os.listdir(input_dir)
+
+    dtype = np.dtype([('mag', float), ('ct', float)])
+
+    for file_name in list_of_files:
+        if file_name.startswith(mag):
+            data = np.genfromtxt(os.path.join(input_dir, file_name), dtype=dtype)
+            if 'mag' in histogram:
+                np.testing.assert_array_equal(histogram['mag'], data['mag'])
+                histogram['ct'] += data['ct']
+            else:
+                histogram['mag'] = data['mag']
+                histogram['ct'] = data['ct']
+
+    return None
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -118,3 +137,33 @@ if __name__ == "__main__":
         plt.tight_layout()
         plt.savefig(fig_name)
         plt.close()
+
+
+    fig_name = os.path.join(args.output_dir, 'magnitude_histograms.png')
+    plt.figsize=(30,30)
+    histogram_fit_dir = os.path.join(args.input_dir, 'fit_histogram')
+    histogram_input_dir = os.path.join(args.input_dir, 'input_histogram')
+    for i_fig, mag in enumerate(mag_list):
+        fit_hist = {}
+        populate_histogram(histogram_fit_dir, mag, fit_hist)
+        input_hist = {}
+        populate_histogram(histogram_input_dir, mag, input_hist)
+
+        plt.subplot(3, 2, i_fig+1)
+        area = (input_hist['ct']*(input_hist['mag'][1]-input_hist['mag'][0])).sum()
+        hinput, = plt.plot(input_hist['mag'], input_hist['ct'], color='k')
+        area = (fit_hist['ct']*(fit_hist['mag'][1]-fit_hist['mag'][0])).sum()
+        hfit, = plt.plot(fit_hist['mag'], fit_hist['ct'], color='r')
+
+        plt.xlabel('%s' % mag)
+        plt.ylabel('N_stars')
+
+        if i_fig == 0:
+            plt.legend([hinput, hfit],
+                       ['input', 'fit'], loc=0)
+
+        print '%s fit: %d input: %d' % (mag, int(fit_hist['ct'].sum()), int(input_hist['ct'].sum()))
+
+    plt.tight_layout()
+    plt.savefig(fig_name)
+    plt.close()
