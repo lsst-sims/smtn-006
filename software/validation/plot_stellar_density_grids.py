@@ -20,115 +20,130 @@ import time
 
 import os
 
-if __name__ == "__main__":
+import argparse
 
-    t_start = time.time()
 
-    # user-specified resolution.  Just make sure that it matches with
-    # stellar_density_get_arrays.py and stellar_density_control_arrays.py
-    NSIDE = 64
+# user-specified resolution.  Just make sure that it matches with
+# stellar_density_get_arrays.py and stellar_density_control_arrays.py
+NSIDE = 64
 
-    n_bounds = 17  # number of magnitude bins
 
-    n_control_jobs = 32  # number of independent jobs run with
-                         # stellar_density_control_arrays.py
+def plot_density(input_dir, mag, i_bound, i_fig, rows=3, cols=2, title=None):
 
     n_pix = hp.nside2npix(NSIDE)
 
-    plt.figsize = (30,30)
-
-    model_dir = "nside64_model_txt"  # where the ...get_arrays.py maps are
-    control_dir = "nside64_control_txt"  # where ...control_arrays.py maps are
-    fig_dir = "fig_test"  # where plots will be put
-    dtype = np.dtype([('ct', float)])
-
     margins = (0.01, 0.01, 0.01, 0.01)
-    cticks = np.arange(-1.0,6.0,1.0)
-    clabels = ['%d' % int(cc) for cc in cticks]
 
-    for name in ('u', 'g', 'r', 'i', 'z', 'y'):
-        file_ct = 0
-        n_cols_max = 2
-        n_rows_max = 3
-        col = 0
-        row = 0
-        fignum = 0
-        for ibound in range(n_bounds):
+    list_of_files = os.listdir(input_dir)
+    ct_arr = np.zeros(n_pix)
+    dtype = np.dtype([('ct', int)])
+    tag_list = []
 
-            control_data = None
-            for ijob in range(n_control_jobs):
-                file_name = os.path.join(control_dir,
-                                         "healpix_control_grid_%s_%d_job%d.txt" % (name, ibound, ijob))
+    legend = None
 
-                data = np.genfromtxt(file_name, dtype=dtype)
-                if control_data is None:
-                    control_data = data['ct']
-                else:
-                    control_data += data['ct']
+    tag = '%s_%d' % (mag, i_bound)
 
-            file_name = os.path.join(model_dir, "healpix_grid_%s_%d.txt" % (name, ibound))
+    for file_name in list_of_files:
 
-            with open(file_name, "r") as input_file:
-                lines = input_file.readlines()
-                fig_title = lines[0].replace('# ','').replace('\n','')
-                nside_test = int(lines[1].split()[2])
-                assert nside_test == NSIDE
+        if not tag in file_name:
+            continue
 
-            data = np.genfromtxt(file_name, dtype=dtype)
-            assert len(data['ct']) == n_pix
-            assert len(control_data) == n_pix
+        full_name = os.path.join(input_dir, file_name)
 
-            if fignum==0:
-                plt.figsize = (30, 30)
-                fignum = 1
+        with open(full_name, 'r') as input_file:
+            if legend is None:
+                legend = input_file.readlines()[0]
+                print legend
+            else:
+                assert legend == input_file.readlines()[0]
 
+        data = np.genfromtxt(full_name, dtype=dtype)
+        assert len(data['ct']) == n_pix
+        ct_arr += data['ct']
 
-            log_data = np.log10(data['ct']+0.1)
-            c_min = log_data.min()
-            c_max = log_data.max()
+    if title is None:
+        fig_title = legend.strip().replace('# ','')
+    else:
+        fig_title = legend.strip().replace('# ','') + ' ' + title
 
-            log_input = np.log10(control_data+0.1)
-            if log_input.min() < c_min:
-                c_min = log_input.min()
-            if log_input.max() > c_max:
-                c_max = log_input.max()
+    hp.mollview(ct_arr, title=fig_title,
+                sub=(rows,cols,i_fig), cbar=False, margins=margins)
+    hp.graticule(dpar=10, dmer=20, verbose=False)
 
-            cticks = np.arange(c_min, c_max, 0.2*(c_max-c_min))
-            clabels = ['%.2f' % cc for cc in cticks]
+    ax = plt.gca()
+    im = ax.get_images()[0]
 
-            hp.mollview(log_data, title=fig_title,
-                        sub=(3,2,fignum), cbar=False, margins=margins)
-            hp.graticule(dpar=10, dmer=20, verbose=False)
-            ax = plt.gca()
-            im = ax.get_images()[0]
+    c_min = ct_arr.min()
+    c_max = ct_arr.max()
 
-            cb = plt.colorbar(im)
-            cb.set_ticks(cticks)
-            cb.set_ticklabels(clabels)
-            cb.set_clim(vmin=c_min, vmax=c_max)
-            cb.draw_all()
-            fignum += 1
+    cticks = np.arange(c_min, c_max, 0.2*(c_max-c_min))
+    clabels = ['%.2f' % cc for cc in cticks]
+
+    cb = plt.colorbar(im)
+    cb.set_ticks(cticks)
+    cb.set_ticklabels(clabels)
+    cb.set_clim(vmin=c_min, vmax=c_max)
+    cb.draw_all()
 
 
-            hp.mollview(log_input, title=fig_title+' input',
-                        sub=(3,2,fignum), cbar=False, margins=margins)
-            hp.graticule(dpar=10, dmer=20, verbose=False)
-            ax = plt.gca()
-            im = ax.get_images()[0]
+if __name__ == "__main__":
 
-            cb = plt.colorbar(im)
-            cb.set_ticks(cticks)
-            cb.set_ticklabels(clabels)
-            cb.set_clim(vmin=c_min, vmax=c_max)
-            cb.draw_all()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input_dir", type=str, default=None)
+    parser.add_argument("--output_dir", type=str, default=None)
 
-            fignum += 1
-            if fignum >= n_cols_max*n_rows_max or ibound==n_bounds-1:
-                out_name = os.path.join(fig_dir, "%s_density_%d.png" % (name, file_ct))
-                #plt.tight_layout()
-                plt.savefig(out_name)
+    args = parser.parse_args()
+    if args.input_dir is None:
+        raise RuntimeError("Must supply input_dir")
+    if args.output_dir is None:
+        raise RuntimeError("Must supply output_dir")
+
+    if os.path.exists(args.output_dir) and not os.path.isdir(args.output_dir):
+        raise RuntimeError('%s is not a dir' % args.output_dir)
+
+    if not os.path.exists(args.output_dir):
+        os.mkdir(args.output_dir)
+
+    fit_map_dir = os.path.join(args.input_dir, 'fit_healpix_maps')
+    input_map_dir = os.path.join(args.input_dir, 'input_healpix_maps')
+
+    with open(os.path.join(fit_map_dir, 'number_of_bounds.txt'), 'r') as in_file:
+        n_bounds_fit = int(in_file.readlines()[0])
+
+    with open(os.path.join(input_map_dir, 'number_of_bounds.txt'), 'r') as in_file:
+        n_bounds_input = int(in_file.readlines()[0])
+
+    assert n_bounds_fit == n_bounds_input
+    print 'n_bounds ',n_bounds_fit
+
+    mag_list = ['u', 'g', 'r', 'i', 'z', 'y']
+
+    rows = 3
+    cols = 2
+
+    for mag in mag_list:
+
+        plt.figsize = (30,30)
+        i_plot=0
+        i_fig = 1
+        fig_name = os.path.join(args.output_dir, '%s_fig_%d.png' % (mag, i_plot))
+
+        for ib in range(n_bounds_fit):
+            plot_density(input_map_dir, mag, ib, i_fig, title='(input)', rows=rows, cols=cols)
+            i_fig += 1
+            plot_density(fit_map_dir, mag, ib, i_fig, title='(fit)', rows=rows, cols=cols)
+            i_fig += 1
+
+            if i_fig>rows*cols:
+                plt.savefig(fig_name)
                 plt.close()
-                fignum=0
-                file_ct += 1
+                i_plot += 1
+                fig_name = os.path.join(args.output_dir, '%s_fig_%d.png' % (mag, i_plot))
+                i_fig = 1
+                plt.figsize=(30, 30)
 
-    print 'took ',time.time()-t_start
+        if i_fig>1:
+            plt.savefig(fig_name)
+            plt.close()
+            i_plot += 1
+            i_fig = 1
