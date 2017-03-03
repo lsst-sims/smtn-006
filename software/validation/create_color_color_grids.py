@@ -199,6 +199,7 @@ if __name__ == "__main__":
             good_dexes = np.where(good_data['%snoatm' % mm]>-98.0)
             good_mags = good_data['%snoatm' % mm][good_dexes]
             ii_arr = (np.round((good_mags-mag_min)/dmag)).astype(int)
+            ii_arr = np.where(ii_arr<n_hist, ii_arr, n_hist-1)
             unq, counts = np.unique(ii_arr, return_counts=True)
             fit_histograms[mm][unq] += counts
 
