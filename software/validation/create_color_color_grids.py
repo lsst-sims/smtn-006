@@ -109,7 +109,7 @@ if __name__ == "__main__":
         for line in lines:
             list_of_files.append(line.strip())
 
-    dmag = 0.05
+    dmag = 0.01
 
     dtype = np.dtype([('id', long), ('ra', float), ('dec', float),
                       ('pmra', float), ('pmdec', float),
