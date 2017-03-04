@@ -27,7 +27,7 @@ def populate_grid(input_dir, mag1, grid):
     return None
 
 def plot_grid(grid, xlabel, ylabel, title, i_fig,
-              xbounds=None, ybounds=None, rows=1, cols=2, cbounds=None):
+              xbounds=None, ybounds=None, rows=1, cols=2):
     x_arr = []
     y_arr = []
     ct_arr = []
@@ -49,7 +49,7 @@ def plot_grid(grid, xlabel, ylabel, title, i_fig,
     cum_arr = np.cumsum(ct_arr)
 
     plt.subplot(rows, cols, i_fig)
-    plt.scatter(x_arr, y_arr, c=ct_arr.astype(float),
+    plt.scatter(x_arr, y_arr, c=cum_arr.astype(float)/ct_arr.sum(),
                 edgecolor='',s=5,
                 cmap=plt.cm.gist_ncar)
     plt.xlabel(xlabel)
@@ -69,11 +69,10 @@ def plot_grid(grid, xlabel, ylabel, title, i_fig,
         ybounds = (y_arr.min()-0.5, y_arr.max()+0.5)
         plt.ylim(ybounds)
 
-    cb = plt.colorbar()
-    if cbounds is not None:
-        cb.set_clim(vmin=cbounds[0], vmax=cbounds[1])
+    if i_fig==1:
+        cb = plt.colorbar()
 
-    return xbounds, ybounds, (ct_arr.min(), ct_arr.max())
+    return xbounds, ybounds
 
 
 def populate_histogram(input_dir, mag, histogram):
@@ -129,18 +128,15 @@ if __name__ == "__main__":
         ylabel = '%s-%s' % (mag2, mag3)
 
         grid = {}
-        populate_grid(color_color_input_dir, mag1, grid)
-        title = 'input'
-        xbounds=(0,10)
-        ybounds=(0,10)
-        _xbounds, _ybounds, cbounds = plot_grid(grid, xlabel, ylabel, title, 1,
-                                                xbounds=xbounds, ybounds=ybounds)
-
-        grid = {}
         populate_grid(color_color_fit_dir, mag1, grid)
         title = 'fit'
-        plot_grid(grid, xlabel, ylabel, title, 2,
-                  xbounds=xbounds, ybounds=ybounds, cbounds=cbounds)
+        xbounds, ybounds = plot_grid(grid, xlabel, ylabel, title, 2)
+
+        grid = {}
+        populate_grid(color_color_input_dir, mag1, grid)
+        title = 'input'
+        plot_grid(grid, xlabel, ylabel, title, 1,
+                  xbounds=xbounds, ybounds=ybounds)
 
         plt.tight_layout()
         plt.savefig(fig_name)
@@ -182,8 +178,8 @@ if __name__ == "__main__":
     for i_fig, mag in enumerate(mag_list):
         grid = {}
         populate_grid(input_vs_fit_dir, mag, grid)
-        xbounds, ybounds, cbounds = plot_grid(grid, '%s_in' % mag, '%s_fit' % mag, None, i_fig+1,
-                                              rows=3, cols=2)
+        xbounds, ybounds = plot_grid(grid, '%s_in' % mag, '%s_fit' % mag, None, i_fig+1,
+                                     rows=3, cols=2)
 
         plt.plot(ybounds, ybounds, linewidth=0.5, color='r')
 
