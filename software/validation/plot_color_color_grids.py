@@ -49,7 +49,7 @@ def plot_grid(grid, xlabel, ylabel, title, i_fig,
     cum_arr = np.cumsum(ct_arr)
 
     plt.subplot(rows, cols, i_fig)
-    plt.scatter(x_arr, y_arr, c=cum_arr.astype(float)/ct_arr.sum(),
+    plt.scatter(x_arr, y_arr, c=ct_arr.astype(float),
                 edgecolor='',s=5,
                 cmap=plt.cm.gist_ncar)
     plt.xlabel(xlabel)
@@ -69,8 +69,7 @@ def plot_grid(grid, xlabel, ylabel, title, i_fig,
         ybounds = (y_arr.min()-0.5, y_arr.max()+0.5)
         plt.ylim(ybounds)
 
-    if i_fig==1:
-        cb = plt.colorbar()
+    cb = plt.colorbar()
 
     return xbounds, ybounds
 
