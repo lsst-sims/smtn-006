@@ -32,7 +32,7 @@ def plot_density(input_dir, mag, i_bound, i_fig, rows=3, cols=2, title=None):
 
     n_pix = hp.nside2npix(NSIDE)
 
-    margins = (0.01, 0.01, 0.02, 0.01)
+    margins = (0.01, 0.01, 0.04, 0.01)
 
     list_of_files = os.listdir(input_dir)
     ct_arr = np.zeros(n_pix)
