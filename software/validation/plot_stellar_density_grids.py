@@ -32,7 +32,7 @@ def plot_density(input_dir, mag, i_bound, i_fig, rows=3, cols=2, title=None):
 
     n_pix = hp.nside2npix(NSIDE)
 
-    margins = (0.01, 0.01, 0.01, 0.01)
+    margins = (0.01, 0.01, 0.02, 0.01)
 
     list_of_files = os.listdir(input_dir)
     ct_arr = np.zeros(n_pix)
@@ -66,8 +66,8 @@ def plot_density(input_dir, mag, i_bound, i_fig, rows=3, cols=2, title=None):
     else:
         fig_title = legend.strip().replace('# ','') + ' ' + title
 
-    hp.mollview(ct_arr, title=fig_title,
-                sub=(rows,cols,i_fig), cbar=False, margins=margins)
+    hp.mollview(ct_arr, title=fig_title,cbar=False, margins=margins,
+                sub=(rows, cols, i_fig))
     hp.graticule(dpar=10, dmer=20, verbose=False)
 
     ax = plt.gca()
@@ -77,12 +77,13 @@ def plot_density(input_dir, mag, i_bound, i_fig, rows=3, cols=2, title=None):
     c_max = ct_arr.max()
 
     cticks = np.arange(c_min, c_max, 0.2*(c_max-c_min))
-    clabels = ['%.2f' % cc for cc in cticks]
+    clabels = ['%.2e' % cc for cc in cticks]
 
     cb = plt.colorbar(im)
     cb.set_ticks(cticks)
     cb.set_ticklabels(clabels)
     cb.set_clim(vmin=c_min, vmax=c_max)
+    cb.ax.tick_params(labelsize=10)
     cb.draw_all()
 
 
