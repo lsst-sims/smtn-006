@@ -28,14 +28,12 @@ import argparse
 NSIDE = 64
 
 
-def plot_density(input_dir, mag, i_bound, i_fig, rows=3, cols=2, title=None):
+def plot_density(input_dir_list, mag, i_bound, i_fig, rows=3, cols=2, title_list=None):
 
     n_pix = hp.nside2npix(NSIDE)
 
     margins = (0.01, 0.01, 0.04, 0.01)
 
-    list_of_files = os.listdir(input_dir)
-    ct_arr = np.zeros(n_pix)
     dtype = np.dtype([('ct', int)])
     tag_list = []
 
@@ -43,49 +41,65 @@ def plot_density(input_dir, mag, i_bound, i_fig, rows=3, cols=2, title=None):
 
     tag = '%s_%d' % (mag, i_bound)
 
-    for file_name in list_of_files:
+    ct_arr = {}
 
-        if not tag in file_name:
-            continue
+    for input_dir in input_dir_list:
+        list_of_files = os.listdir(input_dir)
+        ct_arr[input_dir] = np.zeros(n_pix)
+        for file_name in list_of_files:
 
-        full_name = os.path.join(input_dir, file_name)
+            if not tag in file_name:
+                continue
 
-        with open(full_name, 'r') as input_file:
-            if legend is None:
-                legend = input_file.readlines()[0]
-                print legend
-            else:
-                assert legend == input_file.readlines()[0]
+            full_name = os.path.join(input_dir, file_name)
 
-        data = np.genfromtxt(full_name, dtype=dtype)
-        assert len(data['ct']) == n_pix
-        ct_arr += data['ct']
+            with open(full_name, 'r') as input_file:
+                if legend is None:
+                    legend = input_file.readlines()[0]
+                    print legend
+                else:
+                    assert legend == input_file.readlines()[0]
 
-    if title is None:
-        fig_title = legend.strip().replace('# ','')
-    else:
-        fig_title = legend.strip().replace('# ','') + ' ' + title
+            data = np.genfromtxt(full_name, dtype=dtype)
+            assert len(data['ct']) == n_pix
+            ct_arr[input_dir] += data['ct']
 
-    hp.mollview(ct_arr, title=fig_title,cbar=False, margins=margins,
-                sub=(rows, cols, i_fig))
-    hp.graticule(dpar=10, dmer=20, verbose=False)
+    c_min = None
+    c_max = None
+    for input_dir in input_dir_list:
+        lmin = ct_arr[input_dir].min()
+        lmax = ct_arr[input_dir].max()
+        if c_min is None or lmin<c_min:
+            c_min = lmin
+        if c_max is None or lmax>c_max:
+            c_max = lmax
 
-    ax = plt.gca()
-    im = ax.get_images()[0]
+    for input_dir, title in zip(input_dir_list, title_list):
+        if title_list is None:
+            fig_title = legend.strip().replace('# ','')
+        else:
+            fig_title = legend.strip().replace('# ','') + ' ' + title
 
-    c_min = ct_arr.min()
-    c_max = ct_arr.max()
+        hp.mollview(ct_arr[input_dir], title=fig_title,cbar=False, margins=margins,
+                    sub=(rows, cols, i_fig))
+        hp.graticule(dpar=10, dmer=20, verbose=False)
 
-    cticks = np.arange(c_min, c_max, 0.2*(c_max-c_min))
-    clabels = ['%.2e' % cc for cc in cticks]
+        i_fig += 1
 
-    cb = plt.colorbar(im)
-    cb.set_ticks(cticks)
-    cb.set_ticklabels(clabels)
-    cb.set_clim(vmin=c_min, vmax=c_max)
-    cb.ax.tick_params(labelsize=10)
-    cb.draw_all()
+        ax = plt.gca()
+        im = ax.get_images()[0]
 
+        cticks = np.arange(c_min, c_max, 0.2*(c_max-c_min))
+        clabels = ['%.2e' % cc for cc in cticks]
+
+        cb = plt.colorbar(im)
+        cb.set_ticks(cticks)
+        cb.set_ticklabels(clabels)
+        cb.set_clim(vmin=c_min, vmax=c_max)
+        cb.ax.tick_params(labelsize=10)
+        cb.draw_all()
+
+    return i_fig
 
 if __name__ == "__main__":
 
@@ -130,10 +144,9 @@ if __name__ == "__main__":
         fig_name = os.path.join(args.output_dir, '%s_fig_%d.png' % (mag, i_plot))
 
         for ib in range(n_bounds_fit):
-            plot_density(input_map_dir, mag, ib, i_fig, title='(input)', rows=rows, cols=cols)
-            i_fig += 1
-            plot_density(fit_map_dir, mag, ib, i_fig, title='(fit)', rows=rows, cols=cols)
-            i_fig += 1
+
+            i_fig = plot_density([input_map_dir, fit_map_dir], mag, ib, i_fig,
+                                 title_list=['(input)', '(fit)'], rows=rows, cols=cols)
 
             if i_fig>rows*cols:
                 plt.savefig(fig_name)
