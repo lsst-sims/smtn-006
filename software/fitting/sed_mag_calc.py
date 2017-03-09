@@ -166,7 +166,12 @@ if __name__ == "__main__":
 
         # loop through the sub directories of sims_sed_library
         for sub_dir in sub_dir_list:
-            sed_dir = os.path.join(root_sed_dir, 'starSED', sub_dir)
+            if not sub_dir.startswith('high_temp'):
+                sed_dir = os.path.join(root_sed_dir, 'starSED', sub_dir)
+            else:
+                sed_dir = os.path.join('/astro', 'users', 'danielsf',
+                                       'bright_stars', 'regen_kurucz',
+                                       sub_dir)
             list_of_files = os.listdir(sed_dir)
 
             for file_name in list_of_files:

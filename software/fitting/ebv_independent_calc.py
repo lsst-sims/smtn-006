@@ -91,7 +91,7 @@ def get_physical_characteristics(sed_name, sub_dir):
     Read in the name of an SED file.
     Return (in this order) Teff, metallicity (FeH), log(g)
     """
-    if sub_dir == 'kurucz':
+    if 'kurucz' in sub_dir:
         return get_kurucz_phys(sed_name)
     elif sub_dir == 'wDs':
         return get_wd_phys(sed_name)
@@ -121,8 +121,9 @@ if __name__ == "__main__":
     imsimBand = Bandpass()
     imsimBand.imsimBandpass()
 
-    star_dir = os.path.join(getPackageDir('sims_sed_library'), 'starSED')
+    #star_dir = os.path.join(getPackageDir('sims_sed_library'), 'starSED')
     sub_dir_list = ['kurucz', 'mlt', 'wDs']
+    star_dir = os.path.join(getPackageDir('sims_sed_library'), 'starSED')
     
     t_start = time.time()
 

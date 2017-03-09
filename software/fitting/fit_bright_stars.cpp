@@ -75,33 +75,65 @@ exist to standardize that process.
 */
 #define _star_B_dex 0
 #define _star_V_dex 1
+
 #define _star_u_dex 2
 #define _star_g_dex 3
 #define _star_r_dex 4
 #define _star_i_dex 5
 #define _star_z_dex 6
 #define _star_y_dex 7
+
 #define _star_J_dex 8
 #define _star_H_dex 9
 #define _star_K_dex 10
+
 #define _star_w1_dex 11
 #define _star_w2_dex 12
 #define _star_w3_dex 13
 #define _star_w4_dex 14
+
 #define _star_sst_dex 15
+
+#define _n_allowed_colors 8
+
+int _allowed_colors_bp1[_n_allowed_colors]={0,2,3,4,5,6,8,9};
+double _color_min[_n_allowed_colors]={-3.0,-0.5,-0.53,-0.8,-0.32,-0.23,-1.7,-3.1};
+double _color_max[_n_allowed_colors]={13.3,21.0,13.5,8.3,8.2,4.6,4.3,2.6};
 
 #define n_mags 35
 #define n_star_mags 16
 #define hexadec_places 8
+#define binary_places 4
 
-#define bad_val -98.0
+#define min_mag -98.0
+#define max_mag 23.0
 
-int n_sed;
-char **sed_names;
-double *sed_data,*teff,*metallicity,*ebv_data,*logg;
+#define KURUCZ 1
+#define MLT 2
+#define WD 3
 
-int valid_dex[n_mags];
-double star_color[n_mags];
+#define LOG_P_KURUCZ -0.69
+#define LOG_P_MLT -0.92
+#define LOG_P_WD -2.3
+
+int _n_sed;
+char **_sed_names;
+int *_sed_type;
+double *_sed_data,*_teff,*_metallicity,*_ebv_data,*_logg;
+
+int _valid_color_dex[_n_allowed_colors];
+int _valid_mag_dex[n_star_mags];
+double _star_color[_n_allowed_colors];
+
+int _n_unq_sed=0;
+int _n_ebv;
+double *_unq_color,*_unq_color_max,*_unq_color_min;
+int *_unq_sed_type;
+char **_unq_sed_name;
+int *_unq_count,*_unq_map;
+int _default_mag_map[15]={8,9,18,19,20,21,22,17,0,1,2,3,4,5,6};  //from star_mag to sed mag
+
+int _do_prior=0;
 
 double power(double aa, int ee){
      double out=1.0;
@@ -110,6 +142,114 @@ double power(double aa, int ee){
          out*=aa;
      }
      return out;
+}
+
+
+void merge_sort(double *vals, int *dexes, int el,
+                double *buffer1, int *i_buffer1, double *buffer2, int *i_buffer2){
+
+    double mu_copy;
+    int i_copy;
+
+    if(el<2){
+        return;
+    }
+
+    if(el==2){
+        if(vals[0]>vals[1]){
+            mu_copy=vals[0];
+            i_copy=dexes[0];
+            vals[0]=vals[1];
+            dexes[0]=dexes[1];
+            vals[1]=mu_copy;
+            dexes[1]=i_copy;
+        }
+        return;
+    }
+
+    double *local_b1, *local_b2;
+    int *local_ib1, *local_ib2;
+    int made_buffers=0;
+
+    if(buffer1==NULL){
+        made_buffers=1;
+        local_b1 = new double[el];
+        local_b2 = new double[el];
+        local_ib1 = new int[el];
+        local_ib2 = new int[el];
+        buffer1 = local_b1;
+        buffer2 = local_b2;
+        i_buffer1 = local_ib1;
+        i_buffer2 = local_ib2;
+    }
+
+    merge_sort(vals, dexes, el/2, buffer1, i_buffer1, buffer2, i_buffer2);
+    merge_sort(&vals[el/2], &dexes[el/2], el-(el/2), buffer1, i_buffer1, buffer2, i_buffer2);
+
+    int i,j;
+    for(i=0;i<el/2;i++){
+        buffer1[i]=vals[i];
+        i_buffer1[i]=dexes[i];
+    }
+    for(j=0;i<el;i++,j++){
+        buffer2[j]=vals[i];
+        i_buffer2[j]=dexes[i];
+    }
+
+    i=0;
+    j=0;
+    int place;
+    for(place=0;place<el;place++){
+        if(j<el-(el/2) && (i>=el/2 || buffer2[j]<buffer1[i])){
+            vals[place]=buffer2[j];
+            dexes[place]=i_buffer2[j];
+            j++;
+        }
+        else{
+            if(i>=el/2){
+                printf("WARNING i failure in merge_sort\n");
+                exit(1);
+            }
+            vals[place]=buffer1[i];
+            dexes[place]=i_buffer1[i];
+            i++;
+        }
+    }
+
+    if(made_buffers==1){
+        delete [] local_b1;
+        delete [] local_b2;
+        delete [] local_ib1;
+        delete [] local_ib2;
+    }
+
+}
+
+
+void merge_sort(double *vals, int *dexes, int el){
+    merge_sort(vals, dexes, el, NULL, NULL, NULL, NULL);
+}
+
+void get_top_n(double *vals, int *dexes, int el, int nn){
+
+    merge_sort(vals, dexes, nn);
+
+    int whereto,i,j;
+    double mu_copy;
+    int i_copy;
+    for(i=nn;i<el;i++){
+        if(vals[i]<vals[nn-1]){
+            for(whereto=0;whereto<nn-1 && vals[whereto]<vals[i];whereto++);
+            mu_copy=vals[i];
+            i_copy=dexes[i];
+            for(j=nn-1;j>whereto;j--){
+                vals[j]=vals[j-1];
+                dexes[j]=dexes[j-1];
+            }
+            vals[whereto]=mu_copy;
+            dexes[whereto]=i_copy;
+        }
+    }
 }
 
 int char_same(char *w1, char *w2){
@@ -127,6 +267,23 @@ int char_same(char *w1, char *w2){
     return 1;
 }
 
+int _last_unq_dex=-1;
+
+int get_unq_sed_dex(char *name){
+    int i;
+    if(_last_unq_dex>0 && _last_unq_dex<_n_unq_sed){
+        if(char_same(name, _unq_sed_name[_last_unq_dex])==1){
+            return _last_unq_dex;
+        }
+    }
+    for(i=0;i<_n_unq_sed;i++){
+        if(char_same(name, _unq_sed_name[i])==1){
+            _last_unq_dex=i;
+            return i;
+        }
+    }
+    return -1;
+}
 
 long long int twos_complement(long long int ii){
     /*
@@ -137,7 +294,7 @@ long long int twos_complement(long long int ii){
 
     int *binary;
     binary=new int[4*hexadec_places];
-    int binary_places=4*hexadec_places;
+    int local_binary_places=4*hexadec_places;
     long long int remainder=ii*(-1);
     long long int local_term;
     long long int denom;
@@ -145,10 +302,10 @@ long long int twos_complement(long long int ii){
     int val;
     int i;
     local_term=1;
-    for(i=0;i<binary_places;i++){
+    for(i=0;i<local_binary_places;i++){
         local_term*=2;
     }
-    for(dex=binary_places-1;dex>=0;dex--){
+    for(dex=local_binary_places-1;dex>=0;dex--){
         local_term/=2;
         val=remainder/local_term;
         if(val>1){
@@ -160,7 +317,7 @@ long long int twos_complement(long long int ii){
     }
 
 
-    for(i=0;i<binary_places;i++){
+    for(i=0;i<local_binary_places;i++){
         if(binary[i]==1){
             binary[i]=0;
         }
@@ -174,7 +331,7 @@ long long int twos_complement(long long int ii){
     }
     else{
        binary[0]=0;
-       for(i=1;i<binary_places;i++){
+       for(i=1;i<local_binary_places;i++){
            if(binary[i]==1){
                binary[i]=0;
            }
@@ -187,7 +344,7 @@ long long int twos_complement(long long int ii){
 
     remainder=0;
     local_term=1;
-    for(dex=0;dex<binary_places;dex++){
+    for(dex=0;dex<local_binary_places;dex++){
         if(dex>0){
             local_term*=2;
         }
@@ -198,6 +355,31 @@ long long int twos_complement(long long int ii){
 
     return remainder;
 
+}
+
+void convert_to_binary(int ii, int *output){
+    /*
+    Convert an int into an array of binary bits.  Int must be < 16
+    */
+    if(ii>=16){
+        printf("CANNOT convert %d to binary; too big\n", ii);
+        exit(1);
+    }
+
+    int denom, remainder, term;
+    int i;
+    denom=8;
+    remainder=ii;
+    for(i=binary_places-1;i>=0;i--){
+        term = remainder/denom;
+        if(term>1){
+            printf("got a binary term that is %d\n", term);
+            exit(1);
+        }
+        output[i] = term;
+        remainder = remainder - term*denom;
+        denom = denom/2;
+    }
 }
 
 
@@ -239,10 +421,20 @@ void convert_to_hexadecimal(long long int ii, int *output){
 }
 
 
-void get_mag_map(long long int flag, int *map_out){
+void get_mag_map(long long int flag, int *map_out, int *flag_out){
     int hexadec_bits[hexadec_places];
 
     convert_to_hexadecimal(flag, hexadec_bits);
+
+    int i,j,k;
+    int binary_bits[binary_places];
+    for(i=0,j=0;i<hexadec_places;i++){
+        convert_to_binary(hexadec_bits[i],binary_bits);
+        for(k=0;k<binary_places;k++,j++){
+            flag_out[j]=binary_bits[k];
+        }
+    }
+
     int psrc=hexadec_bits[4];
 
     //default (sdss)
@@ -283,68 +475,233 @@ void get_mag_map(long long int flag, int *map_out){
 
 }
 
+double _t_sort=0.0;
+double _t_prelim=0.0;
+double _t_final=0.0;
 
-int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_max, double *best_offset, double *err_out){
+int fit_star_mags(double *star_mags, int *mag_map, double *ebv_grid, double ebv_max, double *best_offset, double *err_out, int *n_valid_out){
     /*
     Read in a an array of mapped star mags.
     Return the row index of the best-fitting SED, e(b-v) combination
     */
 
 
-    int ii,j;
-    int dex_best=-1;
-    double err,err_best=1000000.0;
+    int ii,j,k;
 
-    int n_valid=0;
-    for(ii=0;ii<n_star_mags-1;ii++){
-        if(star_mags[ii]>bad_val){
-            n_valid++;
-        }
-    }
-
-
-    j=0;
-    for(ii=0;ii<n_star_mags-1;ii++){
-        if(star_mags[ii]>bad_val){
-            valid_dex[j]=ii;
-            j++;
-        }
-    }
-
-    double n_good=double(n_valid);
-    double sed_color;
-
-    for(j=0;j<n_valid-1;j++){
-        star_color[j]=star_mags[valid_dex[j]]-star_mags[valid_dex[j+1]];
-    }
-
-    for(ii=0;ii<n_sed;ii++){
-        if(ebv_grid[ii]<=ebv_max){
-
-            err=0.0;
-
-            for(j=0;j<n_valid-1;j++){
-                sed_color=sed_data[ii*n_mags+mag_map[valid_dex[j]]]-sed_data[ii*n_mags+mag_map[valid_dex[j+1]]];
-                err+=(sed_color-star_color[j])*(sed_color-star_color[j]);
-                if(dex_best>=0 && err>err_best){
-                    break;
+    int n_valid_colors=0;
+    int n_valid_mags=0;
+    int ibp1,ibp2,append;
+    double color;
+    for(ii=0;ii<_n_allowed_colors;ii++){
+        ibp1=_allowed_colors_bp1[ii];
+        ibp2=ibp1+1;
+        if(star_mags[ibp1]>min_mag && star_mags[ibp1]<=max_mag){
+            if(star_mags[ibp2]>min_mag && star_mags[ibp2]<=max_mag){
+                color=star_mags[ibp1]-star_mags[ibp2];
+                if(color>=_color_min[ii] && color<=_color_max[ii]){
+                    _valid_color_dex[n_valid_colors]=ii;
+                    n_valid_colors++;
+                    append=1;
+                    for(k=0;k<n_valid_mags;k++){
+                        if(_valid_mag_dex[k]==ibp1){
+                            append=0;
+                            break;
+                        }
+                    }
+                    if(append==1){
+                        _valid_mag_dex[n_valid_mags]=ibp1;
+                        n_valid_mags++;
+                    }
+                    append=1;
+                    for(k=0;k<n_valid_mags;k++){
+                        if(_valid_mag_dex[k]==ibp2){
+                            append=0;
+                            break;
+                        }
+                    }
+                    if(append==1){
+                        _valid_mag_dex[n_valid_mags]=ibp2;
+                        n_valid_mags++;
+                    }
                 }
             }
-
-            if(ii==0 || err<err_best){
-                dex_best=ii;
-                err_best=err;
-             }
         }
     }
 
-    best_offset[0]=0.0;
-    for(j=0;j<n_valid;j++){
-        best_offset[0]+=(star_mags[valid_dex[j]]-sed_data[dex_best*n_mags+mag_map[valid_dex[j]]]);
-    }
-    best_offset[0]=best_offset[0]/n_good;
+    n_valid_out[0]=n_valid_colors;
 
-    err_out[0]=sqrt(err_best)/(n_valid-1);
+    if(n_valid_out[0] <= 1){
+        best_offset[0]=10.0;
+        err_out[0]=100.0;
+        return 0;
+    }
+
+    double sed_color;
+
+    for(j=0;j<n_valid_colors;j++){
+        ibp1=_allowed_colors_bp1[_valid_color_dex[j]];
+        ibp2=ibp1+1;
+        _star_color[j]=star_mags[ibp1]-star_mags[ibp2];
+    }
+
+    double prior_arr[4];
+    double prior,err;
+    prior_arr[KURUCZ]= -2.0*n_valid_colors*LOG_P_KURUCZ;
+    prior_arr[MLT] = -2.0*n_valid_colors*LOG_P_MLT;
+    prior_arr[WD] = -2.0*n_valid_colors*LOG_P_WD;
+
+    int i_unq;
+    int i_ebv;
+
+    int *i_unq_list;
+    double *unq_best_err;
+
+    int ebv_chosen[4] = {10, 20, 40, 72};
+    int i_ebv_chosen;
+    int n_ebv_chosen=4;
+
+    double t_start;
+
+    double local_ebv_max;
+
+    i_unq_list = new int[_n_unq_sed];
+    unq_best_err = new double[_n_unq_sed];
+    for(j=0;j<_n_unq_sed;j++){
+        unq_best_err[j]=10000000.0;
+        i_unq_list[j]=j;
+    }
+
+    t_start=double(time(NULL));
+    for(i_unq=0;i_unq<_n_unq_sed;i_unq++){
+
+        ii=_unq_map[i_unq*_n_ebv];
+        if(_sed_type[ii]==KURUCZ){
+            prior=prior_arr[KURUCZ];
+        }
+        else if(_sed_type[ii]==MLT){
+            prior=prior_arr[MLT];
+        }
+        else if(_sed_type[ii]==WD){
+            prior=prior_arr[WD];
+        }
+        if(_do_prior==0){
+            prior=0.0;
+        }
+
+        j=_unq_map[i_unq*_n_ebv+ebv_chosen[0]];
+
+        if(ebv_max>ebv_grid[j]){
+            local_ebv_max=ebv_max;
+        }
+        else{
+            local_ebv_max=ebv_grid[j]*1.01;
+        }
+
+        for(i_ebv_chosen=0;i_ebv_chosen<n_ebv_chosen;i_ebv_chosen++){
+            i_ebv = ebv_chosen[i_ebv_chosen];
+            ii=_unq_map[i_unq*_n_ebv+i_ebv];
+
+            if(ebv_grid[ii]<=local_ebv_max){
+
+                err=0.0;
+
+                for(j=0;j<n_valid_colors;j++){
+                    ibp1=_allowed_colors_bp1[_valid_color_dex[j]];
+                    ibp2=ibp1+1;
+
+                    sed_color=_sed_data[ii*n_mags+mag_map[ibp1]]-_sed_data[ii*n_mags+mag_map[ibp2]];
+                    err+=(sed_color-_star_color[j])*(sed_color-_star_color[j]);
+                    if(err+prior>unq_best_err[i_unq]){
+                        break;
+                    }
+                }
+
+                if(err+prior<unq_best_err[i_unq]){
+                    unq_best_err[i_unq]=err+prior;
+                 }
+            }
+            else{
+                break;
+            }
+        }
+    }
+
+    _t_prelim+=double(time(NULL))-t_start;
+
+    int dex_best=-1;
+    double err_best;
+    double err_and_prior_best=1000000.0;
+
+    int top_n=300;
+    t_start=double(time(NULL));
+    get_top_n(unq_best_err, i_unq_list, _n_unq_sed, top_n);
+    _t_sort+=double(time(NULL))-t_start;
+
+    int i_list;
+
+    dex_best=-1;
+
+    t_start=double(time(NULL));
+    for(i_list=0;i_list<top_n;i_list++){
+        i_unq=i_unq_list[i_list];
+        ii=_unq_map[i_unq*_n_ebv];
+        if(_sed_type[ii]==KURUCZ){
+            prior=prior_arr[KURUCZ];
+        }
+        else if(_sed_type[ii]==MLT){
+            prior=prior_arr[MLT];
+        }
+        else if(_sed_type[ii]==WD){
+            prior=prior_arr[WD];
+        }
+        if(_do_prior==0){
+            prior=0.0;
+        }
+
+        for(i_ebv=0;i_ebv<_n_ebv;i_ebv++){
+            ii=_unq_map[i_unq*_n_ebv+i_ebv];
+
+            if(ebv_grid[ii]<=ebv_max){
+
+                err=0.0;
+
+                for(j=0;j<n_valid_colors;j++){
+                    ibp1=_allowed_colors_bp1[_valid_color_dex[j]];
+                    ibp2=ibp1+1;
+
+                    sed_color=_sed_data[ii*n_mags+mag_map[ibp1]]-_sed_data[ii*n_mags+mag_map[ibp2]];
+                    err+=(sed_color-_star_color[j])*(sed_color-_star_color[j]);
+                    if(dex_best>=0 && err+prior>err_and_prior_best){
+                        break;
+                    }
+                }
+
+                if(dex_best<0 || err+prior<err_and_prior_best){
+                    dex_best=ii;
+                    err_best=err;
+                    err_and_prior_best=err+prior;
+                 }
+            }
+        }
+    }
+
+    _t_final+=double(time(NULL))-t_start;
+
+    best_offset[0]=0.0;
+    for(j=0;j<n_valid_mags;j++){
+        best_offset[0]+=(star_mags[_valid_mag_dex[j]]-_sed_data[dex_best*n_mags+mag_map[_valid_mag_dex[j]]]);
+    }
+    best_offset[0]=best_offset[0]/double(n_valid_mags);
+
+    err_out[0]=sqrt(err_best/double(n_valid_colors));
+
+    delete [] i_unq_list;
+    delete [] unq_best_err;
+
+    if(dex_best<0){
+       printf("WARNING dex_best is negative\n");
+       exit(1);
+    }
 
     return dex_best;
 
@@ -463,6 +820,9 @@ int main(int iargc, char *argv[]){
                     }
                     output_dir[j]=0;
                     break;
+                case 'p':
+                    _do_prior=1;
+                    break;
             }
         }
     }
@@ -491,6 +851,40 @@ int main(int iargc, char *argv[]){
     }
     fclose(input);
 
+
+    // do some testing to make sure I converted to binary correctly
+
+    printf("testing binary\n");
+    int binary_bits[hexadec_places];
+    convert_to_binary(8, binary_bits);
+    if(binary_bits[0]!=0 || binary_bits[1]!=0 || binary_bits[2]!=0 ||
+       binary_bits[3]!=1){
+        printf("WARNING binary test got 8 wrong\n");
+        for(i=0;i<binary_places;i++){
+            printf("%d\n",binary_bits[i]);
+        }
+        exit(1);
+    }
+
+    convert_to_binary(12, binary_bits);
+    if(binary_bits[0]!=0 || binary_bits[1]!=0 || binary_bits[2]!=1 ||
+       binary_bits[3]!=1){
+        printf("WARNING binary test got 12 wrong\n");
+        for(i=0;i<binary_places;i++){
+            printf("%d\n",binary_bits[i]);
+        }
+        exit(1);
+    }
+
+    convert_to_binary(7, binary_bits);
+    if(binary_bits[0]!=1 || binary_bits[1]!=1 || binary_bits[2]!=1 ||
+       binary_bits[3]!=0){
+        printf("WARNING binary test got 7 wrong\n");
+        for(i=0;i<binary_places;i++){
+            printf("%d\n",binary_bits[i]);
+        }
+        exit(1);
+    }
 
     // do some testing to make sure I converted
     // base 10 to base 16 properly
@@ -626,17 +1020,86 @@ int main(int iargc, char *argv[]){
         }
     }
     fclose(input);
-    n_sed=i;
-    printf("n_sed %d\n",n_sed);
+    _n_sed=i;
+    printf("n_sed %d\n",_n_sed);
 
-    sed_names=new char*[n_sed];
-    sed_data=new double[n_sed*n_mags];
-    ebv_data=new double[n_sed];
+    _sed_names=new char*[_n_sed];
+    _sed_type=new int[_n_sed];
+    _sed_data=new double[_n_sed*n_mags];
+    _ebv_data=new double[_n_sed];
+    _unq_sed_name=new char*[_n_sed];
+
+    int unq_dex;
+
+    for(i=0;i<_n_sed;i++){
+        _sed_names[i]=new char[letters];
+        _unq_sed_name[i]=new char[letters];
+    }
+
+    _unq_count=new int[_n_sed];
+
+    _n_unq_sed=0;
+    input=fopen(sed_grid_name,"r");
+    for(i=0;i<n_mags+2;i++){
+        fscanf(input,"%s",word);
+    }
+    for(i=0;fscanf(input,"%s",_sed_names[i])>0;i++){
+
+        unq_dex=get_unq_sed_dex(_sed_names[i]);
+        if(unq_dex<0){
+            for(j=0;j<letters;j++){
+                _unq_sed_name[_n_unq_sed][j]=_sed_names[i][j];
+            }
+            _unq_count[_n_unq_sed]=1;
+            _n_unq_sed++;
+        }
+        else{
+            if(unq_dex>=_n_unq_sed){
+                printf("WARNING unq dex too big whle making names\n");
+                exit(1);
+            }
+            _unq_count[unq_dex]+=1;
+        }
+
+        for(j=0;j<n_mags+1;j++){
+            fscanf(input,"%le",&xx);
+        }
+    }
+    fclose(input);
+
+    for(i=0;i<_n_unq_sed;i++){
+        if(_unq_count[i]!=_unq_count[0]){
+            printf("WARNING: grid not regular %d\n",_unq_count[0]);
+            for(j=0;j<_n_unq_sed;j++){
+                if(_unq_count[j]!=_unq_count[0]){
+                    printf("%s %d\n",_unq_sed_name[j],_unq_count[j]);
+                }
+            }
+            exit(1);
+        }
+    }
+
+    printf("%d unique seds\n",_n_unq_sed);
+
+    _unq_color=new double[_n_unq_sed*_n_allowed_colors];
+    _unq_sed_type=new int[_n_unq_sed];
     double ebv_min=100.0;
 
+    int ibp1, ibp2, i_color;
+    double color;
+    _unq_color_max=new double[_n_unq_sed*_n_allowed_colors];
+    _unq_color_min=new double[_n_unq_sed*_n_allowed_colors];
 
-    for(i=0;i<n_sed;i++){
-        sed_names[i]=new char[letters];
+    for(i=0;i<_n_unq_sed*_n_allowed_colors;i++){
+        _unq_color_max[i]=-1000000.0;
+        _unq_color_min[i]=1000000.0;
+    }
+
+    _n_ebv=_unq_count[0];
+    _unq_map=new int[_n_unq_sed*_n_ebv];
+
+    for(i=0;i<_n_unq_sed;i++){
+        _unq_count[i]=0;
     }
 
     // read in SEDs and E(B-V)s
@@ -644,19 +1107,72 @@ int main(int iargc, char *argv[]){
     for(i=0;i<n_mags+2;i++){
         fscanf(input,"%s",word);
     }
-    for(i=0;i<n_sed;i++){
-        fscanf(input,"%s",sed_names[i]);
-        fscanf(input,"%le",&ebv_data[i]);
-        if(ebv_data[i]<ebv_min){
-            ebv_min=ebv_data[i];
+    for(i=0;i<_n_sed;i++){
+        fscanf(input,"%s",_sed_names[i]);
+        if(_sed_names[i][0]=='k'){
+            _sed_type[i]=KURUCZ;
+        }
+        else if(_sed_names[i][0]=='l'){
+            _sed_type[i]=MLT;
+        }
+        else if(_sed_names[i][0]=='b'){
+            _sed_type[i]=WD;
+        }
+        else{
+           printf("Do not know type for %s (%d)\n",_sed_names[i],i);
+           exit(1);
+        }
+        fscanf(input,"%le",&_ebv_data[i]);
+        if(_ebv_data[i]<ebv_min){
+            ebv_min=_ebv_data[i];
         }
 
         for(j=0;j<n_mags;j++){
-            fscanf(input,"%le",&sed_data[i*n_mags+j]);
+            fscanf(input,"%le",&_sed_data[i*n_mags+j]);
         }
+
+        unq_dex=get_unq_sed_dex(_sed_names[i]);
+
+        if(unq_dex<0 || unq_dex>=_n_unq_sed){
+            printf("WARNING unq_dex %d; but %d\n",unq_dex,_n_unq_sed);
+            exit(1);
+        }
+
+        if(_unq_count[unq_dex]>=_n_ebv){
+            printf("WARNING unq count exceeded _n_ebv %d %d %s %s\n",
+            _n_ebv,_unq_count[unq_dex],_unq_sed_name[unq_dex],_sed_names[i]);
+            exit(1);
+        }
+
+        _unq_map[unq_dex*_n_ebv+_unq_count[unq_dex]]=i;
+        _unq_count[unq_dex]+=1;
+        _unq_sed_type[unq_dex]=_sed_type[i];
+
+        for(i_color=0;i_color<_n_allowed_colors;i_color++){
+            ibp1=_default_mag_map[_allowed_colors_bp1[i_color]];
+            ibp2=_default_mag_map[_allowed_colors_bp1[i_color]+1];
+            if(ibp1>=n_mags || ibp2>=n_mags){
+               printf("WARNING ibp1/2 out of bounds\n");
+               exit(1);
+            }
+            color = _sed_data[i*n_mags+ibp1]-_sed_data[i*n_mags+ibp2];
+            if(color<_unq_color_min[unq_dex*_n_allowed_colors+i_color]){
+                _unq_color_min[unq_dex*_n_allowed_colors+i_color]=color;
+            }
+            if(color>_unq_color_max[unq_dex*_n_allowed_colors+i_color]){
+                _unq_color_max[unq_dex*_n_allowed_colors+i_color]=color;
+            }
+        }
+
     }
     fclose(input);
 
+    for(i=0;i<_n_unq_sed;i++){
+        for(i_color=0;i_color<_n_allowed_colors;i_color++){
+            _unq_color[i*_n_allowed_colors+i_color]= \
+            0.5*(_unq_color_min[i*_n_allowed_colors+i_color]+_unq_color_max[i*_n_allowed_colors+i_color]);
+        }
+    }
 
     int n_raw_sed;
     char **raw_sed_names;
@@ -676,9 +1192,9 @@ int main(int iargc, char *argv[]){
     raw_sed_names=new char*[n_raw_sed];
     raw_magnorm=new double[n_raw_sed];
     raw_sdss_mags=new double*[n_raw_sed];
-    teff=new double[n_raw_sed];
-    metallicity=new double[n_raw_sed];
-    logg=new double[n_raw_sed];
+    _teff=new double[n_raw_sed];
+    _metallicity=new double[n_raw_sed];
+    _logg=new double[n_raw_sed];
     for(i=0;i<n_raw_sed;i++){
         raw_sed_names[i]=new char[letters];
         raw_sdss_mags[i]=new double[5];
@@ -687,7 +1203,7 @@ int main(int iargc, char *argv[]){
     input=fopen(raw_grid_name,"r");
     for(i=0;i<n_raw_sed;i++){
         fscanf(input,"%s",raw_sed_names[i]);
-        fscanf(input,"%le %le %le",&teff[i],&metallicity[i],&logg[i]);
+        fscanf(input,"%le %le %le",&_teff[i],&_metallicity[i],&_logg[i]);
         fscanf(input,"%le",&raw_magnorm[i]);
         for(j=0;j<5;j++){
             fscanf(input,"%le",&raw_sdss_mags[i][j]);
@@ -721,22 +1237,25 @@ int main(int iargc, char *argv[]){
     double err;
     int ct;
 
-    // sfd control
-    //FILE *control;
-    //char control_name[2*letters];
-
     char buffer_name[2*letters];
 
     // construct a mapping so we can associate our SED, E(B-V) grid to
     // the raw SDSS magnitudes and magNorms
     int *sed_to_raw_map;
-    sed_to_raw_map = new int[n_sed];
-    for(i=0;i<n_sed;i++){
+    sed_to_raw_map = new int[_n_sed];
+    for(i=0;i<_n_sed;i++){
+        sed_to_raw_map[i]=-1;
         for(j=0;j<n_raw_sed;j++){
-            if(char_same(raw_sed_names[j], sed_names[i])==1){
+            if(char_same(raw_sed_names[j], _sed_names[i])==1){
                     sed_to_raw_map[i]=j;
-                    continue;
+                    break;
             }
+
+        }
+        if(sed_to_raw_map[i]<0){
+            printf("WARNING could not find raw_map for %s\n",
+            _sed_names[i]);
+            exit(1);
         }
     }
 
@@ -747,6 +1266,8 @@ int main(int iargc, char *argv[]){
     int n_ebv_max,i_line;
     double t_start = double(time(NULL));
     int total_ct=0;
+    int n_colors;
+    int monet_bits[hexadec_places*binary_places];
     char highest_name[letters];
     // Loop over the csv files, performing the fits of all stars in those files
     for(i_file=0;i_file<n_input_files;i_file++){
@@ -789,18 +1310,7 @@ int main(int iargc, char *argv[]){
 
         sprintf(output_name,"%s/%s_ebv_grid_fit.txt", output_dir, highest_name);
 
-        // sfd control
-        //sprintf(control_name,"%s_control.txt", input_files[i_file]);
-        //control=fopen(control_name,"w");
-
         output=fopen(output_name, "w");
-        fprintf(output,"#dummy_htmid star_id ra dec mura mudec lon lat ");
-        fprintf(output,"sed magnorm flux_factor E(B-V) Teff [Fe/H] log(g) ");
-        fprintf(output,"lsst_u_noatm lsst_g_noatm lsst_r_noatm lsst_i_noatm lsst_z_noatm lsst_y_noatm ");
-        fprintf(output,"lsst_u_atm lsst_g_atm lsst_r_atm lsst_i_atm lsst_z_atm lsst_y_atm ");
-        fprintf(output,"sdss_u(ext) sdss_g(ext) sdss_r(ext) sdss_i(ext) sdss_z(ext) ");
-        fprintf(output,"sdss_u(raw) sdss_g(raw) sdss_r(raw) sdss_i(raw) sdss_z(raw) ");
-        fprintf(output,"color_residual file_name\n");
 
         // read in the ' ' delimited file created with sed
         input=fopen(buffer_name,"r");
@@ -815,6 +1325,10 @@ int main(int iargc, char *argv[]){
             }
             total_ct++;
             ct++;
+            if(total_ct%1000==0){
+                printf("did %d in %e hours\n",total_ct,
+                (double(time(NULL))-t_start)/3600.0);
+            }
             fscanf(input,"%le %le %le %le\n",
             &ra, &dec, &mura, &mudec);
 
@@ -824,7 +1338,7 @@ int main(int iargc, char *argv[]){
             fscanf(input,"%lld",&flag);
 
             // map the star's magnitudes onto the SED magnitudes
-            get_mag_map(flag, mag_map);
+            get_mag_map(flag, mag_map, monet_bits);
 
             // make sure that ebv_max fits in the grid of ebv we have input
             if(ebv_max[i_line]>ebv_min){
@@ -835,13 +1349,13 @@ int main(int iargc, char *argv[]){
             }
 
             // choose the SED, E(B-V) pair that best matches the star's colors
-            i_chosen=fit_star_mags(star_mags, mag_map, ebv_data, ebv_max_scalar, &offset, &err);
+            i_chosen=fit_star_mags(star_mags, mag_map, _ebv_data, ebv_max_scalar, &offset, &err, &n_colors);
 
             raw_dex=sed_to_raw_map[i_chosen];
 
             if(raw_dex<0){
                 printf("WARNING could not find raw match for\n");
-                printf("%s\n",sed_names[i_chosen]);
+                printf("%s\n",_sed_names[i_chosen]);
                 exit(1);
             }
 
@@ -849,57 +1363,34 @@ int main(int iargc, char *argv[]){
 
             lonLatFromRaDec(ra, dec, &lon, &lat);
 
-            fprintf(output,"0 %lld %.12le %.12le %.12le %.12le %.12le %.12le ",
+            fprintf(output,"%lld %.12le %.12le %.12le %.12le %.12le %.12le ",
             star_id, ra, dec, mura*1000.0, mudec*1000.0, lon, lat);
 
             fprintf(output,"%s %le %le %le ",
-            sed_names[i_chosen],raw_magnorm[raw_dex]+offset,flux_factor,ebv_data[i_chosen]);
-
-            fprintf(output,"%le %le %le ",teff[raw_dex], metallicity[raw_dex], logg[raw_dex]);
+            _sed_names[i_chosen],raw_magnorm[raw_dex]+offset,flux_factor,_ebv_data[i_chosen]);
 
             fprintf(output,"%le %le %le %le %le %le ",
-            sed_data[i_chosen*n_mags+_lsst_u_dex]+offset,sed_data[i_chosen*n_mags+_lsst_g_dex]+offset,
-            sed_data[i_chosen*n_mags+_lsst_r_dex]+offset,sed_data[i_chosen*n_mags+_lsst_i_dex]+offset,
-            sed_data[i_chosen*n_mags+_lsst_z_dex]+offset,sed_data[i_chosen*n_mags+_lsst_y_dex]+offset);
+            _sed_data[i_chosen*n_mags+_lsst_u_dex]+offset,_sed_data[i_chosen*n_mags+_lsst_g_dex]+offset,
+            _sed_data[i_chosen*n_mags+_lsst_r_dex]+offset,_sed_data[i_chosen*n_mags+_lsst_i_dex]+offset,
+            _sed_data[i_chosen*n_mags+_lsst_z_dex]+offset,_sed_data[i_chosen*n_mags+_lsst_y_dex]+offset);
 
             fprintf(output,"%le %le %le %le %le %le ",
-            sed_data[i_chosen*n_mags+_lsst_u_atm_dex]+offset,sed_data[i_chosen*n_mags+_lsst_g_atm_dex]+offset,
-            sed_data[i_chosen*n_mags+_lsst_r_atm_dex]+offset,sed_data[i_chosen*n_mags+_lsst_i_atm_dex]+offset,
-            sed_data[i_chosen*n_mags+_lsst_z_atm_dex]+offset,sed_data[i_chosen*n_mags+_lsst_y_atm_dex]+offset);
+            _sed_data[i_chosen*n_mags+_lsst_u_atm_dex]+offset,_sed_data[i_chosen*n_mags+_lsst_g_atm_dex]+offset,
+            _sed_data[i_chosen*n_mags+_lsst_r_atm_dex]+offset,_sed_data[i_chosen*n_mags+_lsst_i_atm_dex]+offset,
+            _sed_data[i_chosen*n_mags+_lsst_z_atm_dex]+offset,_sed_data[i_chosen*n_mags+_lsst_y_atm_dex]+offset);
 
-            fprintf(output,"%le %le %le %le %le ",
-            sed_data[i_chosen*n_mags+_sdss_u_dex]+offset,sed_data[i_chosen*n_mags+_sdss_g_dex]+offset,
-            sed_data[i_chosen*n_mags+_sdss_r_dex]+offset,sed_data[i_chosen*n_mags+_sdss_i_dex]+offset,
-            sed_data[i_chosen*n_mags+_sdss_z_dex]+offset);
-
-            fprintf(output,"%le %le %le %le %le ",
-            raw_sdss_mags[raw_dex][0]+offset, raw_sdss_mags[raw_dex][1]+offset,
-            raw_sdss_mags[raw_dex][2]+offset, raw_sdss_mags[raw_dex][3]+offset,
-            raw_sdss_mags[raw_dex][4]+offset);
-
-            fprintf(output,"%le %s",err,highest_name);
-            fprintf(output,"\n");
-
-            // sfd control
-            //convert_to_hexadecimal(flag, hexadec_bits);
-            //fprintf(control,"%lld %le ",star_id, err);
-            //if(hexadec_bits[4]==0 || hexadec_bits[4]==1 || hexadec_bits[4]==11){
-            //    fprintf(control,"PanStarrs ");
-            //}
-            //else{
-            //    fprintf(control,"SDSS ");
-            //}
-            //fprintf(control,"%le %le %le %le %le\n",
-            //star_mags[_star_u_dex], star_mags[_star_g_dex],
-            //star_mags[_star_r_dex], star_mags[_star_i_dex],
-            //star_mags[_star_z_dex]);
+            for(i=0;i<n_star_mags;i++){
+                fprintf(output,"%le ",star_mags[i]);
+            }
+            for(i=0;i<hexadec_places*binary_places;i++){
+                fprintf(output,"%d ",monet_bits[i]);
+            }
+            fprintf(output,"%le %s ",err,highest_name);
+            fprintf(output,"%d\n",n_colors);
 
         }
         fclose(input);
         fclose(output);
-
-        // sfd control
-        //fclose(control);
 
         sprintf(cmd,"gzip -f %s",output_name);
         system(cmd);
@@ -913,6 +1404,9 @@ int main(int iargc, char *argv[]){
     }
 
     printf("that took %e to do %d\n",double(time(NULL))-t_start,total_ct);
+    printf("sorting took %e\n",_t_sort);
+    printf("prelim took %e\n",_t_prelim);
+    printf("final took %e\n",_t_final);
 
 }
 
