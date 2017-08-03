@@ -1,8 +1,20 @@
 sudo: false
 language: python
-python:
-      - 3.4
-install: "pip install -r requirements.txt"
-script: "make html"
-notifications:
-      email: false
+matrix:
+  include:
+    - python: "3.5"
+      env: LTD_MASON_BUILD=true
+install:
+  - pip install -r requirements.txt
+  - pip install "ltd-mason>=0.2,<0.3"
+script:
+  - sphinx-build -b html -a -n -d _build/doctree . _build/html
+after_success:
+  - ltd-mason-travis --html-dir _build/html
+env:
+  global:
+    - LTD_MASON_BUILD=false  # disable builds in regular text matrix
+    - LTD_MASON_PRODUCT="smtn-006"
+    # Add AWS and LTD Keeper credentials as encrypted secrets here
+    - secure: "IDfIPqusJArsS24/594rVbbWlIHBRdNd0fBn5jesmLcTJfYlPMe9wwxhjD4s2bFX7hOsMXEyQjb4IM5ugS54CG1evtbdv8TVcS965PZ2EOr4WD4XVJg1or+PQXr3IpSlS+4K6Rr6RHiK0K10WicTe7EaERZBJS/Ur0KKb/OUUTq2PyJMjqNtvrPYaopJq8RDANHv0paoLaBZs3/ocw6M59gu18SW1LJ8nYV1VfCE9khjsQbWXFSIALbzXoWliZm6M52Ge5yQ9MrTRaj1zsxNv+ihhRQ1lpmVuBYG2f2vjKpdRIDztGkeTjpQoZzxQYzsM/3fwDNozc7Sg7faQFza3zUcKyxkIhuNUxqsgp35xsPOBNdaC5f5pLLrBrEBSeidRs9a1d4wQREV1NxvTpD/p6DGoIDPXiQm/kjTUhfNmqV716aj8ZbGtVpX2QPluLqgYGClyz3WcUWukJp/kYkvF4uK5sZSw7h6NiMpe2ac+iym1R6aY1FCwWEF1+ueWDJQU17EgehPV1hCMWlPxm8bN9P4w1Aef15dGXrSohzd1opuve6fMioMFTdBGJf9zLZHX/ACdCDL2ub4DVhXU/FQ/iQ90ZRkh2YZhEkImPv8xf4aPflRG9Yucs/D147gJNl8eYkByXYZPaZR9j8NuJHcm63QhqnIhzxaW24glq8lCnI="
+    - secure: "aHo5xf61/cqCVJzdlWQQCHaUZmko2iLtR3OTQVGHPxOwYl6VKwURB6sHgy6gua0hl4h/g6a/fKZ4ZsNSst0Dx+P8o4Pxo6EjuHqaPP5rWxPWq04BZT1eUI0hxU6RB5LpCHXaYPrE4EUJvD9cnri7UegFcWbfgYNjLrC8FejgQVhpe/bG7xfcQ0g1RIY0knVcDZ53EYabCBDCohL5KRc+c1IC4ZGZ9R82pyRhGGsLFVSsSBnXK42nV8obiJK5jjUETipJPB5ZJ8GrNWEtw9WmzeyQT36ONVtpQgQP9t/JU7Hj0e33zlyk8VP8W9DnPkExh4cAIvFEd3RyAsKU9lYXBZV5sQj5lvjjt3cLxegts0Z5XH/bixLXTPxGTy+HKNUXrlhkbgnZhyLKGxoB0TwXrn1/0UwVh84iy8ehe5bIY5ugGR0MH2rphmIegaQf8SFAUAOReFnBqWbx5uULUxOCVuBdCxcRKQ7c8bFvMLDzWSBf6jIPYxuhVcCQwBfEQbm+KyF665xW2IkBsLGPVRaho6h3l5PHjVKDcc6I6EElj177I96GO1XRRFe9YUi5hAmTSLLGB1f0xywAPmy7bQynhchCgn/v7JCWw5J5pGO2MWLHuyEoBgYbtMb8hfuzFIBPrUVI1x4qcIvZq6U1duyuzSP4InFDAickCF14yV43V+Q="
